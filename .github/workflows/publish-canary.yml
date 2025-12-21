@@ -1,9 +1,6 @@
 name: Publish Canary (npm)
 
 on:
-  pull_request:
-    branches:
-      - '**'
   workflow_dispatch:
     inputs:
       npm_tag:

@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./dist",
+    "jsx": "react-jsx"
+  },
+  "include": ["src"],
+  "exclude": ["**/*.test.tsx", "**/*.test.ts", "**/*.stories.tsx", "src/test/**/*"]
+}

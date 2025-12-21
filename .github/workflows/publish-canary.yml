@@ -1,0 +1,58 @@
+name: Publish Canary (npm)
+
+on:
+  pull_request:
+    branches:
+      - '**'
+  workflow_dispatch:
+    inputs:
+      npm_tag:
+        description: "npm dist-tag to publish under"
+        required: false
+        default: "canary"
+
+permissions:
+  contents: read
+
+jobs:
+  publish_canary:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Set canary version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_VERSION=$(node -p "require('./package.json').version.split('-')[0]")
+          SHORT_SHA=$(node -p "process.env.GITHUB_SHA.slice(0,7)")
+          CANARY_VERSION="${BASE_VERSION}-canary.${GITHUB_RUN_NUMBER}.${SHORT_SHA}"
+
+          echo "Publishing canary version: ${CANARY_VERSION}"
+          npm version --no-git-tag-version "${CANARY_VERSION}"
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag "${{ github.event.inputs.npm_tag || 'canary' }}" --access public

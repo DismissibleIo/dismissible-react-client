@@ -1,0 +1,67 @@
+.dismissible-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.dismissible-content {
+  width: 100%;
+}
+
+.dismissible-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.dismissible-button:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #333;
+}
+
+.dismissible-button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.dismissible-button:active {
+  transform: scale(0.95);
+}
+
+.dismissible-loading {
+  padding: 16px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.dismissible-error {
+  padding: 16px;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  color: #c33;
+  font-size: 14px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dismissible-button {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+}

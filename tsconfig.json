@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2015", // Use ES2015 for better compatibility
+    "useDefineForClassFields": true,
+    "lib": ["ES2015", "ES2017", "DOM", "DOM.Iterable"], // Include ES2017 for async/await
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "types": ["vitest/globals", "vite/client"],
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "./dist",
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src", "src/**/*"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

@@ -1,0 +1,105 @@
+{
+  "name": "@dismissible/react-client",
+  "version": "0.3.2",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "main": "./dist/dismissible-client.umd.js",
+  "module": "./dist/dismissible-client.es.js",
+  "types": "./dist/root.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/root.d.ts",
+      "import": "./dist/dismissible-client.es.js",
+      "require": "./dist/dismissible-client.umd.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "commit": "cz",
+    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose",
+    "lint": "eslint \"{.storybook,src,test}/**/*.{ts,tsx}\" --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "preview": "vite preview",
+    "release": "semantic-release",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "storybook": "storybook dev -p 6006",
+    "storybook:staging": "MODE=staging storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "script": "ts-node -r tsconfig-paths/register --project tsconfig.json",
+    "generate:clean": "rm -rf ./src/generated/contract/*",
+    "generate:api": "npm run generate:clean && npx openapi-typescript http://localhost:3001/docs-yaml -o ./src/generated/contract/index.d.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.15.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.2",
+    "@semantic-release/npm": "^13.1.3",
+    "@storybook/addon-a11y": "^10.1.10",
+    "@storybook/addon-docs": "^10.1.10",
+    "@storybook/react-vite": "^10.1.10",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/node": "^25.0.3",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.50.0",
+    "@typescript-eslint/parser": "^8.50.0",
+    "@vitejs/plugin-react": "^5.1.2",
+    "commitizen": "^4.3.1",
+    "core-js": "^3.47.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-storybook": "^10.1.10",
+    "happy-dom": "^20.0.11",
+    "msw": "^2.12.4",
+    "msw-storybook-addon": "^2.0.6",
+    "openapi-typescript": "^7.10.1",
+    "prettier": "^3.7.4",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "semantic-release": "^25.0.2",
+    "storybook": "^10.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.0.16"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "eslintConfig": {
+    "extends": [
+      "plugin:storybook/recommended"
+    ]
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  }
+}

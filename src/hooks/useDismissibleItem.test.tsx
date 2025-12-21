@@ -2,7 +2,6 @@ import React from "react";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";
 
-// Use vi.hoisted to ensure mocks are set up before imports
 const { mockGet, mockDelete, mockPost } = vi.hoisted(() => {
   const mockGet = vi.fn();
   const mockDelete = vi.fn();
@@ -10,7 +9,6 @@ const { mockGet, mockDelete, mockPost } = vi.hoisted(() => {
   return { mockGet, mockDelete, mockPost };
 });
 
-// Mock openapi-fetch to return our mock functions
 vi.mock("openapi-fetch", () => ({
   default: () => ({
     GET: mockGet,
@@ -19,11 +17,9 @@ vi.mock("openapi-fetch", () => ({
   }),
 }));
 
-// Now import the hook and provider after the mocks are set up
 import { useDismissibleItem } from "./useDismissibleItem";
 import { DismissibleProvider } from "../contexts/DismissibleProvider";
 
-// Default wrapper with userId for all tests
 const defaultUserId = "test-user";
 const defaultBaseUrl = "https://api.test.com";
 const createWrapper = (userId: string = defaultUserId) => {
@@ -36,7 +32,6 @@ const createWrapper = (userId: string = defaultUserId) => {
   return Wrapper;
 };
 
-// Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -273,7 +268,6 @@ describe("useDismissibleItem", () => {
       expect(result.current.isLoading).toBe(false);
       expect(result.current.dismissedOn).toBe("2023-01-01");
 
-      // Should not make API call when dismissed item is cached
       await waitFor(() => {
         expect(mockGet).not.toHaveBeenCalled();
       });
@@ -287,12 +281,11 @@ describe("useDismissibleItem", () => {
         updatedAt: "2023-01-01",
       };
 
-      // Set expired cache (1 hour ago)
       localStorageMock.setItem(
         "dismissible_test-user-test-id",
         JSON.stringify({
           data: cachedItem,
-          timestamp: Date.now() - 3600001, // 1 hour + 1ms ago
+          timestamp: Date.now() - 3600001,
         }),
       );
 
@@ -395,7 +388,7 @@ describe("useDismissibleItem", () => {
     it("doesn't use cache for non-dismissed items", async () => {
       const cachedItem = {
         id: "test-id",
-        dismissedAt: null, // Not dismissed
+        dismissedAt: null,
         createdAt: "2023-01-01",
         updatedAt: "2023-01-01",
       };
@@ -417,7 +410,6 @@ describe("useDismissibleItem", () => {
         wrapper: createWrapper(),
       });
 
-      // Should still fetch from API since item is not dismissed
       await waitFor(() => {
         expect(mockGet).toHaveBeenCalled();
       });

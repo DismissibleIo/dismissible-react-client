@@ -100,8 +100,6 @@ export const Dismissible: React.FC<DismissibleProps> = ({
   cacheExpiration,
   ignoreErrors = false,
 }) => {
-  // Note: The hook also returns `restore` for restoring dismissed items.
-  // For restore functionality, use the useDismissibleItem hook directly in custom implementations.
   const { dismissedOn, isLoading, error, dismiss } = useDismissibleItem(
     itemId,
     {
@@ -113,7 +111,6 @@ export const Dismissible: React.FC<DismissibleProps> = ({
 
   const [isDismissing, setIsDismissing] = useState(false);
 
-  // Reset isDismissing when itemId changes
   useEffect(() => {
     setIsDismissing(false);
   }, [itemId]);
@@ -128,27 +125,22 @@ export const Dismissible: React.FC<DismissibleProps> = ({
     }
   };
 
-  // Show loading state
   if (isLoading && LoadingComponent) {
     return <LoadingComponent itemId={itemId} />;
   }
 
-  // Hide content if loading and no LoadingComponent
   if (isLoading && !LoadingComponent) {
     return null;
   }
 
-  // Show error state (unless ignoring errors)
   if (error && ErrorComponent && !ignoreErrors) {
     return <ErrorComponent itemId={itemId} error={error} />;
   }
 
-  // Hide content if dismissed or currently dismissing
   if (dismissedOn || isDismissing) {
     return null;
   }
 
-  // Show content with dismiss functionality
   return (
     <div className="dismissible-container">
       <div className="dismissible-content">{children}</div>

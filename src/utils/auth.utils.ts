@@ -11,7 +11,6 @@ export const resolveJwt = async (
   if (typeof jwt === "function") {
     try {
       const result = jwt();
-      // Handle both sync and async functions
       return await Promise.resolve(result);
     } catch (error) {
       console.warn("Failed to resolve JWT from function:", error);

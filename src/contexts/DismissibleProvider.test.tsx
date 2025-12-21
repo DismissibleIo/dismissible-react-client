@@ -4,7 +4,6 @@ import { describe, it, expect, vi } from "vitest";
 import { DismissibleProvider } from "./DismissibleProvider";
 import { useDismissibleContext } from "./DismissibleContext";
 
-// Test component to access context
 const TestComponent: React.FC = () => {
   const context = useDismissibleContext();
   const [authHeaders, setAuthHeaders] = useState<string>("{}");

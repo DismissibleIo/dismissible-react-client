@@ -4,23 +4,22 @@ A React component library for creating dismissible UI elements with persistent s
 
 **Free and open source** - use with the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api) that you can self-host with Docker or integrate into your NestJS application.
 
-🌐 **[dismissible.io](https://dismissible.io)** | 📖 **[Documentation](https://dismissible.io/docs)** | 🐙 **[API Server](https://github.com/DismissibleIo/dismissible-api)**
+**[dismissible.io](https://dismissible.io)** | **[Documentation](https://dismissible.io/docs)** | **[API Server](https://github.com/DismissibleIo/dismissible-api)**
 
 [![npm version](https://badge.fury.io/js/@dismissible%2Freact-client.svg)](https://badge.fury.io/js/@dismissible%2Freact-client)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
-- 🎯 **Easy to use** - Simple component API for dismissible content
-- 💾 **Persistent state** - Dismissal state is saved and restored across sessions
-- 🔄 **Restore support** - Restore previously dismissed items programmatically
-- 🔐 **JWT Authentication** - Built-in support for secure JWT-based authentication
-- 🎨 **Customizable** - Custom loading, error, and dismiss button components
-- ♿ **Accessible** - Built with accessibility best practices
-- 🪝 **Hook-based** - Includes `useDismissibleItem` hook for custom implementations
-- 📦 **Lightweight** - Minimal bundle size with tree-shaking support
-- 🔧 **TypeScript** - Full TypeScript support with complete type definitions
-- 🐳 **Self-hosted** - Works with your own Dismissible API server
+- **Easy to use** - Simple component API for dismissible content
+- **Persistent state** - Dismissal state is saved and restored across sessions when using the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api)
+- **Restore support** - Restore previously dismissed items programmatically
+- **JWT Authentication** - Built-in support for secure JWT-based authentication
+- **Customizable** - Custom loading, error, and dismiss button components
+- **Accessible** - Built with accessibility best practices
+- **Hook-based** - Includes `useDismissibleItem` hook for custom implementations
+- **Lightweight** - Minimal bundle size with tree-shaking support
+- **TypeScript** - Full TypeScript support with complete type definitions
 
 ## Installation
 
@@ -40,7 +39,7 @@ npm install react react-dom
 
 ### 1. Set up the Dismissible API Server
 
-First, you need a Dismissible API server running. The easiest way is with Docker:
+First, you need a [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api) and Postgres DB running. The easiest way is with Docker:
 
 ```yaml
 # docker-compose.yml
@@ -73,17 +72,17 @@ volumes:
 docker-compose up -d
 ```
 
-See the [API Server documentation](https://github.com/DismissibleIo/dismissible-api) for more deployment options including NestJS integration.
+See the [API Server documentation](https://github.com/DismissibleIo/dismissible-api) for more deployment options including NestJS integration, public Docker image and more.
 
 ### 2. Configure the Provider
 
-Wrap your app with `DismissibleProvider`. The `userId` prop is **required** to track dismissals per user:
+Wrap your app with `DismissibleProvider`. The `userId` prop is **required** to track all your dismissals per user:
 
 ```tsx
 import { DismissibleProvider } from '@dismissible/react-client';
 
 function App() {
-  const userId = getCurrentUserId(); // Get from your auth system
+  const userId = getCurrentUserId();
   
   return (
     <DismissibleProvider userId={userId} baseUrl="http://localhost:3001">
@@ -94,6 +93,7 @@ function App() {
 ```
 
 ### 3. Use Dismissible Components
+Now wrap any component you want to be dismissible with the `<Dismissible>` component, and the `itemId`, along with the `userId`, will become the unique key that is tracked across sessions and devices.
 
 ```tsx
 import { Dismissible } from '@dismissible/react-client';
@@ -338,7 +338,6 @@ function App() {
 function Dashboard() {
   return (
     <div>
-      {/* Dismissible state is tracked per user */}
       <Dismissible itemId="user-welcome-banner">
         <div className="alert alert-info">
           <h4>Welcome back!</h4>
@@ -427,19 +426,19 @@ function Dashboard() {
     <div>
       <Dismissible itemId="feature-announcement">
         <div className="alert alert-success">
-          🎉 New feature: Dark mode is now available!
+          New feature: Dark mode is now available!
         </div>
       </Dismissible>
 
       <Dismissible itemId="maintenance-notice">
         <div className="alert alert-warning">
-          ⚠️ Scheduled maintenance: Sunday 2AM-4AM EST
+          Scheduled maintenance: Sunday 2AM-4AM EST
         </div>
       </Dismissible>
 
       <Dismissible itemId="survey-request">
         <div className="alert alert-info">
-          📝 Help us improve! Take our 2-minute survey.
+          Help us improve! Take our 2-minute survey.
         </div>
       </Dismissible>
     </div>
@@ -464,74 +463,6 @@ function RobustBanner() {
         <p>System maintenance scheduled for tonight. Please save your work.</p>
       </div>
     </Dismissible>
-  );
-}
-```
-
-### Integration with Auth Providers
-
-```tsx
-import { DismissibleProvider } from '@dismissible/react-client';
-
-// With Firebase Auth
-function AppWithFirebase() {
-  const user = firebase.auth().currentUser;
-  
-  return (
-    <DismissibleProvider 
-      userId={user.uid}
-      jwt={async () => {
-        if (user) {
-          return await user.getIdToken();
-        }
-        throw new Error('User not authenticated');
-      }}
-      baseUrl="https://api.yourapp.com"
-    >
-      <YourApp />
-    </DismissibleProvider>
-  );
-}
-
-// With Auth0
-function AppWithAuth0() {
-  const { user, getAccessTokenSilently } = useAuth0();
-  
-  return (
-    <DismissibleProvider 
-      userId={user.sub}
-      jwt={async () => await getAccessTokenSilently()}
-      baseUrl="https://api.yourapp.com"
-    >
-      <YourApp />
-    </DismissibleProvider>
-  );
-}
-
-// With token refresh logic
-function AppWithTokenRefresh() {
-  const { user } = useAuth();
-  
-  return (
-    <DismissibleProvider 
-      userId={user.id}
-      jwt={async () => {
-        try {
-          const response = await fetch('/api/auth/refresh', {
-            method: 'POST',
-            credentials: 'include'
-          });
-          const { accessToken } = await response.json();
-          return accessToken;
-        } catch (error) {
-          console.error('Failed to refresh token:', error);
-          throw error;
-        }
-      }}
-      baseUrl="https://api.yourapp.com"
-    >
-      <YourApp />
-    </DismissibleProvider>
   );
 }
 ```
@@ -610,51 +541,6 @@ function RestorableBanner({ itemId }) {
 }
 ```
 
-### Admin Panel with Restore Capability
-
-```tsx
-import { useDismissibleItem } from '@dismissible/react-client';
-
-function AdminNotificationManager({ notificationId }) {
-  const { dismissedOn, dismiss, restore, item, isLoading, error } = 
-    useDismissibleItem(notificationId);
-
-  if (error) {
-    return <div className="error">Error: {error.message}</div>;
-  }
-
-  return (
-    <div className="admin-panel">
-      <h4>Notification: {notificationId}</h4>
-      <p>Status: {dismissedOn ? 'Dismissed' : 'Active'}</p>
-      {dismissedOn && (
-        <p>Dismissed at: {new Date(dismissedOn).toLocaleString()}</p>
-      )}
-      
-      <div className="actions">
-        {dismissedOn ? (
-          <button 
-            onClick={restore} 
-            disabled={isLoading}
-            className="btn-restore"
-          >
-            Restore
-          </button>
-        ) : (
-          <button 
-            onClick={dismiss} 
-            disabled={isLoading}
-            className="btn-dismiss"
-          >
-            Dismiss
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
 ## Styling
 
 The library includes minimal default styles. You can override them or provide your own:
@@ -676,35 +562,6 @@ The library includes minimal default styles. You can override them or provide yo
 .dismissible-button {
   /* Default dismiss button */
 }
-```
-
-## TypeScript Support
-
-The library is written in TypeScript and exports all type definitions:
-
-```tsx
-import type {
-  DismissibleProps,
-  DismissibleProviderProps,
-  JwtToken,
-} from '@dismissible/react-client';
-
-// Custom provider wrapper
-const AuthenticatedDismissibleProvider: React.FC<{
-  children: React.ReactNode;
-}> = ({ children }) => {
-  const { user, getToken } = useAuth();
-  
-  return (
-    <DismissibleProvider 
-      userId={user.id} 
-      jwt={getToken}
-      baseUrl={process.env.DISMISSIBLE_API_URL}
-    >
-      {children}
-    </DismissibleProvider>
-  );
-};
 ```
 
 ## Self-Hosting
@@ -733,9 +590,9 @@ See the [NestJS documentation](https://dismissible.io/docs/nestjs) for setup ins
 
 ## Support
 
-- 📖 [Documentation](https://dismissible.io/docs)
-- 🐙 [GitHub - React Client](https://github.com/DismissibleIo/dismissible-react-client)
-- 🐙 [GitHub - API Server](https://github.com/DismissibleIo/dismissible-api)
+- [Documentation](https://dismissible.io/docs)
+- [GitHub - React Client](https://github.com/DismissibleIo/dismissible-react-client)
+- [GitHub - API Server](https://github.com/DismissibleIo/dismissible-api)
 
 ## License
 

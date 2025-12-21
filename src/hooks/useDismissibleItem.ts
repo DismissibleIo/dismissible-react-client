@@ -42,11 +42,9 @@ export const useDismissibleItem = (
     cacheExpiration,
   } = options;
 
-  // Get context for authentication and userId (throws if not within provider)
   const context = useDismissibleContext();
   const { userId } = context;
 
-  // Create authenticated fetch client using context
   const fetchClient = useMemo(() => {
     return createFetchClient<paths>({
       baseUrl: context.baseUrl,
@@ -54,12 +52,10 @@ export const useDismissibleItem = (
     });
   }, [context.baseUrl]);
 
-  // Generate user-aware cache key to prevent conflicts between users
   const userCacheKey = useMemo(() => {
     return `${userId}-${itemId}`;
   }, [userId, itemId]);
 
-  // Track previous values to detect changes without suppressing exhaustive-deps
   const previousCacheSettings = useRef<{
     enableCache: boolean;
     cachePrefix: string;
@@ -72,10 +68,8 @@ export const useDismissibleItem = (
   const previousId = useRef(itemId);
   const previousUserCacheKey = useRef(userCacheKey);
 
-  // AbortController ref to cancel pending requests on unmount or when dependencies change
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Check for cached data on initialization
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [item, setItem] = useState<IDismissibleItem | undefined>(() => {
@@ -91,9 +85,7 @@ export const useDismissibleItem = (
     return undefined;
   });
 
-  // Fetch the dismissible item data
   const fetchItem = useCallback(async () => {
-    // Check cache first if enabled
     if (enableCache) {
       const cachedItem = getCachedItem<IDismissibleItem>(
         userCacheKey,
@@ -107,7 +99,6 @@ export const useDismissibleItem = (
       }
     }
 
-    // Cancel any pending request before starting a new one
     abortControllerRef.current?.abort();
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -116,7 +107,6 @@ export const useDismissibleItem = (
     setError(null);
 
     try {
-      // Get authentication headers dynamically (supports async JWT functions)
       const authHeaders = await context.getAuthHeaders();
 
       const { data, error } = await fetchClient.GET(
@@ -139,12 +129,10 @@ export const useDismissibleItem = (
 
       setItem(data.data);
 
-      // Cache the fetched item if caching is enabled
       if (enableCache) {
         setCachedItem(userCacheKey, data.data, cachePrefix);
       }
     } catch (err) {
-      // Ignore abort errors - they're expected when cancelling requests
       if (err instanceof Error && err.name === "AbortError") {
         return;
       }
@@ -165,16 +153,11 @@ export const useDismissibleItem = (
     context,
   ]);
 
-  // Load data on mount and when id/user changes.
-  // Behavior goals:
-  // - If initialData is provided, do NOT fetch on first mount.
-  // - If id/user changes, always fetch (even if initialData is present) to avoid stale data.
   useEffect(() => {
     const idChanged = previousId.current !== itemId;
     const userCacheKeyChanged = previousUserCacheKey.current !== userCacheKey;
 
     if (idChanged || userCacheKeyChanged) {
-      // ID or user changed, always fetch regardless of cache
       previousId.current = itemId;
       previousUserCacheKey.current = userCacheKey;
       fetchItem();
@@ -186,14 +169,12 @@ export const useDismissibleItem = (
     }
   }, [itemId, userCacheKey, initialData, fetchItem]);
 
-  // Cleanup: abort any pending requests on unmount
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
     };
   }, []);
 
-  // Handle cache settings changes
   useEffect(() => {
     const prev = previousCacheSettings.current;
     const hasSettingsChanged =
@@ -202,30 +183,24 @@ export const useDismissibleItem = (
       prev.cacheExpiration !== cacheExpiration;
 
     if (hasSettingsChanged) {
-      // Clean up old cache entry if cachePrefix changed
       if (prev.cachePrefix !== cachePrefix) {
         removeCachedItem(userCacheKey, prev.cachePrefix);
       }
 
-      // If cache is now disabled, remove current cache entry
       if (!enableCache && prev.enableCache) {
-        // Remove using the previous prefix (that is where the entry was stored).
         removeCachedItem(userCacheKey, prev.cachePrefix);
       }
 
-      // Update the ref with current settings
       previousCacheSettings.current = {
         enableCache,
         cachePrefix,
         cacheExpiration,
       };
 
-      // Refetch to ensure data consistency with new settings
       fetchItem();
     }
   }, [enableCache, cachePrefix, cacheExpiration, userCacheKey, fetchItem]);
 
-  // Dismiss the item
   const dismiss = useCallback(async (): Promise<void> => {
     setError(null);
 
@@ -251,7 +226,6 @@ export const useDismissibleItem = (
 
       setItem(data.data);
 
-      // Update cache with dismissed item if caching is enabled
       if (enableCache) {
         setCachedItem(userCacheKey, data.data, cachePrefix);
       }
@@ -271,7 +245,6 @@ export const useDismissibleItem = (
     context,
   ]);
 
-  // Restore the item
   const restore = useCallback(async (): Promise<void> => {
     setError(null);
 
@@ -297,7 +270,6 @@ export const useDismissibleItem = (
 
       setItem(data.data);
 
-      // Update cache with restored item if caching is enabled
       if (enableCache) {
         setCachedItem(userCacheKey, data.data, cachePrefix);
       }

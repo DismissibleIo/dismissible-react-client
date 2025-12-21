@@ -7,13 +7,9 @@ import "../components/Dismissible.css";
 import { getBaseUrl } from "../config/api.config";
 import React, { useState } from "react";
 
-// Get API base URL for consistent endpoint mocking
 const baseUrl = getBaseUrl();
-
-// Default user ID for stories
 const defaultUserId = "demo-user";
 
-// Custom components for stories
 const CustomLoadingComponent: React.FC<{ itemId: string }> = ({ itemId }) => (
   <div
     className="custom-loading"
@@ -187,7 +183,6 @@ const meta = {
   ],
   parameters: {
     layout: "centered",
-    // Add decorators specifically for Docs mode
     docs: {
       decorators: [
         (Story: React.FC) => (
@@ -218,7 +213,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Default story with mock for non-dismissed item
 export const Default: Story = {
   args: {
     itemId: "example-dismissible",
@@ -414,23 +408,21 @@ export const LoadingState: Story = {
     msw: {
       handlers: [
         http.get(`${baseUrl}/v1/users/:userId/items/:itemId`, () => {
-          // Delay the response to simulate loading
-          return new Promise(
-            (resolve) =>
-              setTimeout(
-                () =>
-                  resolve(
-                    HttpResponse.json({
-                      data: {
-                        itemId: "loading-dismissible",
-                        userId: "demo-user",
-                        dismissedAt: null,
-                        createdAt: "2025-07-09T12:00:00Z",
-                      },
-                    }),
-                  ),
-                10000,
-              ), // Long delay to show loading state
+          return new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve(
+                  HttpResponse.json({
+                    data: {
+                      itemId: "loading-dismissible",
+                      userId: "demo-user",
+                      dismissedAt: null,
+                      createdAt: "2025-07-09T12:00:00Z",
+                    },
+                  }),
+                ),
+              10000,
+            ),
           );
         }),
       ],
@@ -472,7 +464,7 @@ export const InitiallyDismissed: Story = {
             data: {
               itemId: "dismissed-dismissible",
               userId: "demo-user",
-              dismissedAt: "2025-07-09T12:00:00Z", // Already dismissed
+              dismissedAt: "2025-07-09T12:00:00Z",
               createdAt: "2025-07-09T10:00:00Z",
             },
           });
@@ -482,7 +474,6 @@ export const InitiallyDismissed: Story = {
   },
 };
 
-// New stories with custom components
 export const WithCustomComponents: Story = {
   args: {
     itemId: "custom-components",
@@ -532,23 +523,21 @@ export const CustomLoadingState: Story = {
     msw: {
       handlers: [
         http.get(`${baseUrl}/v1/users/:userId/items/:itemId`, () => {
-          // Delay the response to simulate loading
-          return new Promise(
-            (resolve) =>
-              setTimeout(
-                () =>
-                  resolve(
-                    HttpResponse.json({
-                      data: {
-                        itemId: "custom-loading",
-                        userId: "demo-user",
-                        dismissedAt: null,
-                        createdAt: "2025-07-09T12:00:00Z",
-                      },
-                    }),
-                  ),
-                10000,
-              ), // Long delay to show loading state
+          return new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve(
+                  HttpResponse.json({
+                    data: {
+                      itemId: "custom-loading",
+                      userId: "demo-user",
+                      dismissedAt: null,
+                      createdAt: "2025-07-09T12:00:00Z",
+                    },
+                  }),
+                ),
+              10000,
+            ),
           );
         }),
       ],
@@ -631,7 +620,6 @@ export const CustomDismissButton: Story = {
   },
 };
 
-// Stories for null components
 export const NoLoadingIndicator: Story = {
   args: {
     itemId: "no-loading",
@@ -643,23 +631,21 @@ export const NoLoadingIndicator: Story = {
     msw: {
       handlers: [
         http.get(`${baseUrl}/v1/users/:userId/items/:itemId`, () => {
-          // Delay the response to simulate loading
-          return new Promise(
-            (resolve) =>
-              setTimeout(
-                () =>
-                  resolve(
-                    HttpResponse.json({
-                      data: {
-                        itemId: "no-loading",
-                        userId: "demo-user",
-                        dismissedAt: null,
-                        createdAt: "2025-07-09T12:00:00Z",
-                      },
-                    }),
-                  ),
-                3200,
-              ), // Delay to show loading state
+          return new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve(
+                  HttpResponse.json({
+                    data: {
+                      itemId: "no-loading",
+                      userId: "demo-user",
+                      dismissedAt: null,
+                      createdAt: "2025-07-09T12:00:00Z",
+                    },
+                  }),
+                ),
+              3200,
+            ),
           );
         }),
       ],
@@ -924,7 +910,6 @@ export const IgnoreErrorsFalse: Story = {
   },
 };
 
-// Component that demonstrates dismiss and restore with the hook
 const DismissAndRestoreDemo: React.FC = () => {
   const { dismissedOn, dismiss, restore, isLoading } = useDismissibleItem(
     "restore-demo",
@@ -1058,7 +1043,6 @@ export const WithRestoreFunction: Story = {
   },
 };
 
-// Component that shows a dismissed item with restore capability
 const InitiallyDismissedWithRestore: React.FC = () => {
   const { dismissedOn, dismiss, restore, isLoading } = useDismissibleItem(
     "initially-dismissed-restore",
@@ -1164,7 +1148,7 @@ export const InitiallyDismissedWithRestoreOption: Story = {
             data: {
               itemId: "initially-dismissed-restore",
               userId: "demo-user",
-              dismissedAt: "2025-07-09T12:00:00Z", // Already dismissed
+              dismissedAt: "2025-07-09T12:00:00Z",
               createdAt: "2025-07-09T10:00:00Z",
             },
           });

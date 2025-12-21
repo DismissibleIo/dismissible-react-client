@@ -61,8 +61,6 @@ export const DismissibleProvider: React.FC<DismissibleProviderProps> = ({
   baseUrl,
   children,
 }) => {
-  // Warn about insecure transport in all environments
-  // JWT tokens should never be sent over plain HTTP
   const { isSecure } = checkUrlSecurity(baseUrl);
   if (!isSecure) {
     // eslint-disable-next-line no-console
@@ -73,7 +71,6 @@ export const DismissibleProvider: React.FC<DismissibleProviderProps> = ({
     );
   }
 
-  // Memoize the context value to prevent unnecessary re-renders
   const contextValue: DismissibleContextValue = useMemo(
     () => ({
       userId,

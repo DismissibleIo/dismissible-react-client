@@ -22,7 +22,6 @@ export const getCachedItem = <T = unknown>(
 
     const { data, timestamp }: CachedItem<T> = JSON.parse(cached);
 
-    // Check if cache has expired
     if (cacheExpiration && Date.now() - timestamp > cacheExpiration) {
       localStorage.removeItem(key);
       return null;

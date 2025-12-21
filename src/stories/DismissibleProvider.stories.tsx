@@ -6,7 +6,6 @@ import { Dismissible } from "../components/Dismissible";
 import { useDismissibleItem } from "../hooks/useDismissibleItem";
 import { getBaseUrl } from "../config/api.config";
 
-// Get API base URL for consistent endpoint mocking
 const baseUrl = getBaseUrl();
 
 const meta = {
@@ -39,7 +38,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Demo component that uses the dismissible hook
 const DismissibleDemo: React.FC<{ id: string }> = ({ id }) => {
   const { dismissedOn, dismiss, isLoading, error } = useDismissibleItem(id, {
     enableCache: false,
@@ -100,7 +98,6 @@ const DismissibleDemo: React.FC<{ id: string }> = ({ id }) => {
   );
 };
 
-// Demo component that shows multiple dismissible items
 const MultipleDismissibleDemo: React.FC<{ prefix?: string }> = ({
   prefix = "",
 }) => {
@@ -116,7 +113,6 @@ const MultipleDismissibleDemo: React.FC<{ prefix?: string }> = ({
   );
 };
 
-// Demo with JWT token input (using mock localhost endpoint)
 const JWTTokenDemo: React.FC = () => {
   const [userId, setUserId] = useState(defaultUserId);
   const [jwt, setJwt] = useState(
@@ -230,15 +226,12 @@ const JWTTokenDemo: React.FC = () => {
   );
 };
 
-// Default user ID for stories
 const defaultUserId = "demo-user";
 
-// Helper function to create mock handlers for dismissible items
 const createMockHandlers = (ids: string[]) => {
   const handlers: ReturnType<typeof http.get>[] = [];
 
   ids.forEach((id) => {
-    // GET handler - returns non-dismissed item
     handlers.push(
       http.get(`${baseUrl}/v1/users/:userId/items/:itemId`, () => {
         return HttpResponse.json({
@@ -252,7 +245,6 @@ const createMockHandlers = (ids: string[]) => {
       }),
     );
 
-    // DELETE handler - dismisses the item
     handlers.push(
       http.delete(`${baseUrl}/v1/users/:userId/items/:itemId`, () => {
         return HttpResponse.json({
@@ -350,7 +342,7 @@ export const WithCustomBaseUrl: Story = {
   args: {
     userId: defaultUserId,
     jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
-    baseUrl: baseUrl, // Use mock localhost instead of real staging URL
+    baseUrl: baseUrl,
     children: (
       <div>
         <h3>With Custom Base URL</h3>

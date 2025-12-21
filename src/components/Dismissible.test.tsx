@@ -2,7 +2,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi, type MockedFunction } from "vitest";
 import { Dismissible } from "./Dismissible";
 
-// Mock the useDismissibleItem hook
 vi.mock("../hooks/useDismissibleItem", () => ({
   useDismissibleItem: vi.fn(),
 }));
@@ -197,12 +196,10 @@ describe("Dismissible Component", () => {
     const dismissButton = screen.getByRole("button");
     fireEvent.click(dismissButton);
 
-    // Wait for the dismiss function to be called
     await waitFor(() => {
       expect(mockAsyncDismiss).toHaveBeenCalled();
     });
 
-    // The component should still be visible since the dismiss failed
     expect(screen.getByText("Test content")).toBeInTheDocument();
   });
 
@@ -291,7 +288,6 @@ describe("Dismissible Component", () => {
       </Dismissible>,
     );
 
-    // When ErrorComponent is null and there's an error, it should render the content
     expect(screen.getByText("Test content")).toBeInTheDocument();
     expect(
       screen.queryByText("Unable to load content. Please try again later."),
@@ -406,18 +402,15 @@ describe("Dismissible Component", () => {
       </Dismissible>,
     );
 
-    // Click dismiss button (starts dismissing state)
     const dismissButton = screen.getByRole("button");
     fireEvent.click(dismissButton);
 
-    // Change the ID
     rerender(
       <Dismissible itemId="test-id-2">
         <div>Test content</div>
       </Dismissible>,
     );
 
-    // Component should be visible again (not in dismissing state)
     expect(screen.getByText("Test content")).toBeInTheDocument();
     expect(screen.getByRole("button")).toBeInTheDocument();
   });

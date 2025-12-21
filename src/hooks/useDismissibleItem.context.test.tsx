@@ -4,14 +4,12 @@ import { vi, beforeEach, describe, it, expect } from "vitest";
 import { DismissibleProvider } from "../contexts/DismissibleProvider";
 import { useDismissibleItem } from "./useDismissibleItem";
 
-// Use vi.hoisted to ensure mocks are set up before imports
 const { mockGet, mockDelete } = vi.hoisted(() => {
   const mockGet = vi.fn();
   const mockDelete = vi.fn();
   return { mockGet, mockDelete };
 });
 
-// Mock openapi-fetch to return our mock functions
 vi.mock("openapi-fetch", () => ({
   default: vi.fn().mockImplementation((config) => {
     // Store the config for verification
@@ -26,7 +24,6 @@ vi.mock("openapi-fetch", () => ({
   }),
 }));
 
-// Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -92,7 +89,6 @@ describe("useDismissibleItem with Context", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // Verify the fetch client was created with correct configuration
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((mockGet as any).lastConfig).toEqual({
       baseUrl: "https://api.context.com",
@@ -143,10 +139,8 @@ describe("useDismissibleItem with Context", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // Verify the JWT function was called
     expect(dynamicJwt).toHaveBeenCalled();
 
-    // Verify the fetch client was created with correct configuration
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((mockGet as any).lastConfig).toEqual({
       baseUrl: "https://api.dynamic.com",
@@ -205,7 +199,6 @@ describe("useDismissibleItem with Context", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // Verify cache was set with user-aware key
     expect(localStorageMock.setItem).toHaveBeenCalledWith(
       "dismissible_user-123-test-item",
       expect.any(String),
@@ -218,7 +211,6 @@ describe("useDismissibleItem with Context", () => {
       error: null,
     });
 
-    // First render with user-1
     const wrapper1 = ({ children }: { children: React.ReactNode }) => (
       <DismissibleProvider
         userId="user-1"
@@ -238,7 +230,6 @@ describe("useDismissibleItem with Context", () => {
       expect(result1.current.isLoading).toBe(false);
     });
 
-    // Verify user-1 cache key was used
     expect(localStorageMock.setItem).toHaveBeenCalledWith(
       "dismissible_user-1-test-item",
       expect.any(String),
@@ -247,7 +238,6 @@ describe("useDismissibleItem with Context", () => {
     vi.clearAllMocks();
     localStorageMock.clear();
 
-    // Then render with user-2
     const wrapper2 = ({ children }: { children: React.ReactNode }) => (
       <DismissibleProvider
         userId="user-2"
@@ -267,7 +257,6 @@ describe("useDismissibleItem with Context", () => {
       expect(result2.current.isLoading).toBe(false);
     });
 
-    // Verify user-2 cache key was used
     expect(localStorageMock.setItem).toHaveBeenCalledWith(
       "dismissible_user-2-test-item",
       expect.any(String),
@@ -358,7 +347,6 @@ describe("useDismissibleItem with Context", () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // Should still use the baseUrl from context, just without auth headers
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((mockGet as any).lastConfig).toEqual({
       baseUrl: "https://api.test.com",

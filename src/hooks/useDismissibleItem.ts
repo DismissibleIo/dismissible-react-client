@@ -23,18 +23,33 @@ export interface UseDismissibleItemOptions {
   cacheExpiration?: number;
 }
 
+export interface UseDismissibleItemResponse {
+  /** The date when the item was dismissed, or undefined if not dismissed */
+  dismissedAt?: IDismissibleItem["dismissedAt"];
+  /** Function to dismiss the item */
+  dismiss: () => Promise<void>;
+  /** Function to restore the item */
+  restore: () => Promise<void>;
+  /** Loading state */
+  isLoading: boolean;
+  /** Error state */
+  error?: Error;
+  /** The dismissible item data */
+  item?: IDismissibleItem;
+}
+
 const DEFAULT_CACHE_PREFIX = "dismissible";
 
 /**
  * Hook for managing dismissible items
  * @param id - The ID of the dismissible item
  * @param options - Configuration options for the hook
- * @returns Object with dismissedOn, dismiss and restore functions
+ * @returns Object with dismissedAt, dismiss and restore functions
  */
 export const useDismissibleItem = (
   itemId: string,
   options: UseDismissibleItemOptions = {},
-) => {
+): UseDismissibleItemResponse => {
   const {
     initialData,
     enableCache = true,
@@ -71,7 +86,7 @@ export const useDismissibleItem = (
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | undefined>();
   const [item, setItem] = useState<IDismissibleItem | undefined>(() => {
     if (initialData) return initialData;
     if (enableCache) {
@@ -104,7 +119,7 @@ export const useDismissibleItem = (
     abortControllerRef.current = abortController;
 
     setIsLoading(true);
-    setError(null);
+    setError(undefined);
 
     try {
       const authHeaders = await context.getAuthHeaders();
@@ -202,7 +217,7 @@ export const useDismissibleItem = (
   }, [enableCache, cachePrefix, cacheExpiration, userCacheKey, fetchItem]);
 
   const dismiss = useCallback(async (): Promise<void> => {
-    setError(null);
+    setError(undefined);
 
     try {
       const authHeaders = await context.getAuthHeaders();
@@ -246,7 +261,7 @@ export const useDismissibleItem = (
   ]);
 
   const restore = useCallback(async (): Promise<void> => {
-    setError(null);
+    setError(undefined);
 
     try {
       const authHeaders = await context.getAuthHeaders();
@@ -290,7 +305,7 @@ export const useDismissibleItem = (
   ]);
 
   return {
-    dismissedOn: item?.dismissedAt ?? null,
+    dismissedAt: item?.dismissedAt,
     dismiss,
     restore,
     isLoading,

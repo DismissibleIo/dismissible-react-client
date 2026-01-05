@@ -4,7 +4,9 @@
   "type": "module",
   "files": [
     "dist",
-    "README.md"
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
   ],
   "main": "./dist/dismissible-client.umd.js",
   "module": "./dist/dismissible-client.es.js",
@@ -20,22 +22,26 @@
     "access": "public"
   },
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
+    "dev": "vite",
     "commit": "cz",
     "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose",
-    "lint": "eslint \"{.storybook,src,test}/**/*.{ts,tsx}\" --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\" \".github/**/*.{yaml,yml}\"",
+    "format": "npm run prettier:fix && npm run lint:fix",
+    "generate:clean": "rm -rf ./src/generated/contract/*",
+    "generate:api": "npm run generate:clean && npx openapi-typescript http://localhost:3001/docs-yaml -o ./src/generated/contract/index.d.ts",
+    "lint": "eslint \"{.storybook,src,test}/**/*.{ts,tsx}\"",
+    "lint:fix": "eslint \"{.storybook,src,test}/**/*.{ts,tsx}\" --fix",
+    "prettier": "prettier --check \"src/**/*.{ts,tsx}\" \".github/**/*.{yaml,yml}\"",
+    "prettier:fix": "prettier --write \"src/**/*.{ts,tsx}\" \".github/**/*.{yaml,yml}\"",
     "preview": "vite preview",
     "release": "semantic-release",
-    "test": "vitest run --config vitest.config.ts",
-    "test:watch": "vitest --config vitest.config.ts",
+    "script": "ts-node -r tsconfig-paths/register --project tsconfig.json",
     "storybook": "storybook dev -p 6006",
     "storybook:staging": "MODE=staging storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "script": "ts-node -r tsconfig-paths/register --project tsconfig.json",
-    "generate:clean": "rm -rf ./src/generated/contract/*",
-    "generate:api": "npm run generate:clean && npx openapi-typescript http://localhost:3001/docs-yaml -o ./src/generated/contract/index.d.ts"
+    "storybook:build": "storybook build",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "validate": "npm run prettier && npm run lint && npm run test"
   },
   "dependencies": {
     "openapi-fetch": "^0.15.0"
@@ -91,11 +97,6 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
-  },
-  "eslintConfig": {
-    "extends": [
-      "plugin:storybook/recommended"
-    ]
   },
   "msw": {
     "workerDirectory": [

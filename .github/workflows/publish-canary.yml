@@ -35,7 +35,7 @@ jobs:
         run: npm run build
 
       - name: Test
-        run: npm test
+        run: npm run validate
 
       - name: Set canary version
         shell: bash

@@ -228,7 +228,7 @@ export const Default: Story = {
             data: {
               itemId: "example-dismissible",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -277,7 +277,7 @@ export const WithCard: Story = {
             data: {
               itemId: "card-dismissible",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -324,7 +324,7 @@ export const WithAlert: Story = {
             data: {
               itemId: "alert-dismissible",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -378,7 +378,7 @@ export const WithLongContent: Story = {
             data: {
               itemId: "long-content-dismissible",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -416,7 +416,7 @@ export const LoadingState: Story = {
                     data: {
                       itemId: "loading-dismissible",
                       userId: "demo-user",
-                      dismissedAt: null,
+                      dismissedAt: undefined,
                       createdAt: "2025-07-09T12:00:00Z",
                     },
                   }),
@@ -492,7 +492,7 @@ export const WithCustomComponents: Story = {
             data: {
               itemId: "custom-components",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -531,7 +531,7 @@ export const CustomLoadingState: Story = {
                     data: {
                       itemId: "custom-loading",
                       userId: "demo-user",
-                      dismissedAt: null,
+                      dismissedAt: undefined,
                       createdAt: "2025-07-09T12:00:00Z",
                     },
                   }),
@@ -600,7 +600,7 @@ export const CustomDismissButton: Story = {
             data: {
               itemId: "custom-button",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -639,7 +639,7 @@ export const NoLoadingIndicator: Story = {
                     data: {
                       itemId: "no-loading",
                       userId: "demo-user",
-                      dismissedAt: null,
+                      dismissedAt: undefined,
                       createdAt: "2025-07-09T12:00:00Z",
                     },
                   }),
@@ -709,7 +709,7 @@ export const NoDismissButton: Story = {
             data: {
               itemId: "no-dismiss-button",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -756,7 +756,7 @@ export const AllNullComponents: Story = {
             data: {
               itemId: "all-null-components",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -782,7 +782,7 @@ export const NoLoadingErrorModeContent: Story = {
             data: {
               itemId: "special-modes-null",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -911,7 +911,7 @@ export const IgnoreErrorsFalse: Story = {
 };
 
 const DismissAndRestoreDemo: React.FC = () => {
-  const { dismissedOn, dismiss, restore, isLoading } = useDismissibleItem(
+  const { dismissedAt, dismiss, restore, isLoading } = useDismissibleItem(
     "restore-demo",
     { enableCache: false },
   );
@@ -930,7 +930,7 @@ const DismissAndRestoreDemo: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  if (dismissedOn) {
+  if (dismissedAt) {
     return (
       <div
         style={{
@@ -943,7 +943,7 @@ const DismissAndRestoreDemo: React.FC = () => {
       >
         <p style={{ margin: "0 0 12px 0", color: "#6b7280" }}>
           This item was dismissed on{" "}
-          {new Date(dismissedOn).toLocaleDateString()}
+          {new Date(dismissedAt).toLocaleDateString()}
         </p>
         <button
           onClick={handleRestore}
@@ -1013,7 +1013,7 @@ export const WithRestoreFunction: Story = {
             data: {
               itemId: "restore-demo",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -1033,7 +1033,7 @@ export const WithRestoreFunction: Story = {
             data: {
               itemId: "restore-demo",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T12:00:00Z",
             },
           });
@@ -1044,7 +1044,7 @@ export const WithRestoreFunction: Story = {
 };
 
 const InitiallyDismissedWithRestore: React.FC = () => {
-  const { dismissedOn, dismiss, restore, isLoading } = useDismissibleItem(
+  const { dismissedAt, dismiss, restore, isLoading } = useDismissibleItem(
     "initially-dismissed-restore",
     { enableCache: false },
   );
@@ -1063,7 +1063,7 @@ const InitiallyDismissedWithRestore: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  if (dismissedOn) {
+  if (dismissedAt) {
     return (
       <div
         style={{
@@ -1168,7 +1168,7 @@ export const InitiallyDismissedWithRestoreOption: Story = {
             data: {
               itemId: "initially-dismissed-restore",
               userId: "demo-user",
-              dismissedAt: null,
+              dismissedAt: undefined,
               createdAt: "2025-07-09T10:00:00Z",
             },
           });

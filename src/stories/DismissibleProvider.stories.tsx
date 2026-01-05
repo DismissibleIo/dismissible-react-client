@@ -39,7 +39,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const DismissibleDemo: React.FC<{ id: string }> = ({ id }) => {
-  const { dismissedOn, dismiss, isLoading, error } = useDismissibleItem(id, {
+  const { dismissedAt, dismiss, isLoading, error } = useDismissibleItem(id, {
     enableCache: false,
   });
 
@@ -51,12 +51,12 @@ const DismissibleDemo: React.FC<{ id: string }> = ({ id }) => {
     return <div>Error: {error.message}</div>;
   }
 
-  if (dismissedOn) {
+  if (dismissedAt) {
     return (
       <div
         style={{ padding: "16px", background: "#f0f0f0", borderRadius: "4px" }}
       >
-        <p>Item was dismissed on: {dismissedOn}</p>
+        <p>Item was dismissed on: {dismissedAt}</p>
         <p>
           <em>This item is dismissed and would not show in a real app.</em>
         </p>
@@ -238,7 +238,7 @@ const createMockHandlers = (ids: string[]) => {
           data: {
             itemId: id,
             userId: defaultUserId,
-            dismissedAt: null,
+            dismissedAt: undefined,
             createdAt: "2025-07-28T12:00:00Z",
           },
         });

@@ -63,7 +63,6 @@ export const DismissibleProvider: React.FC<DismissibleProviderProps> = ({
 }) => {
   const { isSecure } = checkUrlSecurity(baseUrl);
   if (!isSecure) {
-    // eslint-disable-next-line no-console
     console.warn(
       `[dismissible] Insecure baseUrl "${baseUrl}". ` +
         `Use https:// in production (or localhost for development). ` +

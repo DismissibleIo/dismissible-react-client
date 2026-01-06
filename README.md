@@ -1,13 +1,25 @@
+<p align="center">
+  <a href="https://dismissible.io" target="_blank"><img src="https://raw.githubusercontent.com/DismissibleIo/dismissible-api/main/docs/images/dismissible_logo.png" width="240" alt="Dismissible" /></a>
+</p>
+
+<p align="center">Never Show The Same Thing Twice!</p>
+<p align="center">
+    <a href="https://www.npmjs.com/package/@dismissible/react-client" target="_blank"><img src="https://img.shields.io/npm/v/@dismissible/react-client.svg" alt="NPM Version" /></a>
+    <a href="https://github.com/dismissibleio/dismissible-react-client/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/npm/l/@dismissible/react-client.svg" alt="Package License" /></a>
+    <a href="https://www.npmjs.com/package/@dismissible/react-client" target="_blank"><img src="https://img.shields.io/npm/dm/@dismissible/react-client.svg" alt="NPM Downloads" /></a>
+    <a href="https://github.com/dismissibleio/dismissible-react-client" target="_blank"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/dismissibleio/dismissible-react-client/publish.yml" /></a>
+    <a href="https://paypal.me/joshstuartx" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" /></a>
+</p>
+
+Dismissible manages the state of your UI elements across sessions, so your users see what matters, once! No more onboarding messages reappearing on every tab, no more notifications haunting users across devices. Dismissible syncs dismissal state everywhere, so every message is intentional, never repetitive.
+
 # @dismissible/react-client
 
-A React component library for creating dismissible UI elements with persistent state management.
+This is the React component library for creating dismissible UI elements with persistent state management.
 
-**Free and open source** - use with the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api) that you can self-host with Docker or integrate into your NestJS application.
+This component is used with the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api), which you can self-host with Docker or integrate into your NestJS application.
 
 **[dismissible.io](https://dismissible.io)** | **[Documentation](https://dismissible.io/docs)** | **[API Server](https://github.com/DismissibleIo/dismissible-api)**
-
-[![npm version](https://badge.fury.io/js/@dismissible%2Freact-client.svg)](https://badge.fury.io/js/@dismissible%2Freact-client)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
@@ -39,7 +51,7 @@ npm install react react-dom
 
 ### 1. Set up the Dismissible API Server
 
-First, you need a [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api) and Postgres DB running. The easiest way is with Docker:
+First, you need a [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api). The easiest way is with Docker:
 
 ```yaml
 # docker-compose.yml
@@ -51,25 +63,16 @@ services:
       - '3001:3001'
     environment:
       DISMISSIBLE_PORT: 3001
-      DISMISSIBLE_POSTGRES_STORAGE_CONNECTION_STRING: postgresql://postgres:postgres@db:5432/dismissible
-    depends_on:
-      - db
-
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: dismissible
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
 ```
 
 ```bash
 docker-compose up -d
+```
+
+OR
+
+```bash
+docker run -p 3001:3001 -e DISMISSIBLE_PORT=3001 dismissibleio/dismissible-api:latest
 ```
 
 See the [API Server documentation](https://github.com/DismissibleIo/dismissible-api) for more deployment options including NestJS integration, public Docker image and more.
@@ -242,11 +245,11 @@ For custom implementations and advanced use cases.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `dismissedOn` | `string \| null` | ISO date string when item was dismissed, or null |
+| `dismissedAt` | `string \| undefined` | ISO date string when item was dismissed, or undefined |
 | `dismiss` | `() => Promise<void>` | Function to dismiss the item |
 | `restore` | `() => Promise<void>` | Function to restore a dismissed item |
 | `isLoading` | `boolean` | Loading state indicator |
-| `error` | `Error \| null` | Error state, if any |
+| `error` | `Error \| undefined` | Error state, if any |
 | `item` | `IDismissibleItem \| undefined` | The full dismissible item object |
 
 #### Example
@@ -255,7 +258,7 @@ For custom implementations and advanced use cases.
 import { useDismissibleItem } from '@dismissible/react-client';
 
 function CustomDismissible({ itemId, children }) {
-  const { dismissedOn, dismiss, restore, isLoading, error } = useDismissibleItem(itemId);
+  const { dismissedAt, dismiss, restore, isLoading, error } = useDismissibleItem(itemId);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -265,7 +268,7 @@ function CustomDismissible({ itemId, children }) {
     return <div>Error: {error.message}</div>;
   }
 
-  if (dismissedOn) {
+  if (dismissedAt) {
     return (
       <div>
         <p>This item was dismissed.</p>
@@ -474,12 +477,12 @@ import { useDismissibleItem } from '@dismissible/react-client';
 import { useState, useEffect } from 'react';
 
 function SmartNotification({ itemId, message, type = 'info' }) {
-  const { dismissedOn, dismiss, isLoading } = useDismissibleItem(itemId);
+  const { dismissedAt, dismiss, isLoading } = useDismissibleItem(itemId);
   const [autoHide, setAutoHide] = useState(false);
 
   // Auto-hide after 10 seconds for info messages
   useEffect(() => {
-    if (type === 'info' && !dismissedOn) {
+    if (type === 'info' && !dismissedAt) {
       const timer = setTimeout(() => {
         setAutoHide(true);
         dismiss();
@@ -487,9 +490,9 @@ function SmartNotification({ itemId, message, type = 'info' }) {
       
       return () => clearTimeout(timer);
     }
-  }, [type, dismissedOn, dismiss]);
+  }, [type, dismissedAt, dismiss]);
 
-  if (dismissedOn || autoHide) {
+  if (dismissedAt || autoHide) {
     return null;
   }
 
@@ -516,12 +519,12 @@ Use the `restore` function to bring back previously dismissed content:
 import { useDismissibleItem } from '@dismissible/react-client';
 
 function RestorableBanner({ itemId }) {
-  const { dismissedOn, dismiss, restore, isLoading } = useDismissibleItem(itemId);
+  const { dismissedAt, dismiss, restore, isLoading } = useDismissibleItem(itemId);
 
-  if (dismissedOn) {
+  if (dismissedAt) {
     return (
       <div className="dismissed-placeholder">
-        <p>Banner was dismissed on {new Date(dismissedOn).toLocaleDateString()}</p>
+        <p>Banner was dismissed on {new Date(dismissedAt).toLocaleDateString()}</p>
         <button onClick={restore} disabled={isLoading}>
           {isLoading ? 'Restoring...' : 'Show Banner Again'}
         </button>

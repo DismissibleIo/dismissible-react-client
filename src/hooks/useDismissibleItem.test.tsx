@@ -84,8 +84,8 @@ describe("useDismissibleItem", () => {
         expect(mockGet).toHaveBeenCalled();
       });
 
-      expect(result.current.dismissedOn).toBeNull();
-      expect(result.current.error).toBeNull();
+      expect(result.current.dismissedAt).toBeNull();
+      expect(result.current.error).toBeUndefined();
       expect(mockGet).toHaveBeenCalledWith(
         "/v1/users/{userId}/items/{itemId}",
         expect.objectContaining({
@@ -103,7 +103,7 @@ describe("useDismissibleItem", () => {
     it("only passes path parameters in API request", async () => {
       const mockItem = {
         id: "test-id",
-        dismissedAt: null,
+        dismissedAt: undefined,
         createdAt: "2023-01-01",
         updatedAt: "2023-01-01",
       };
@@ -122,8 +122,8 @@ describe("useDismissibleItem", () => {
         expect(mockGet).toHaveBeenCalled();
       });
 
-      expect(result.current.dismissedOn).toBeNull();
-      expect(result.current.error).toBeNull();
+      expect(result.current.dismissedAt).toBeUndefined();
+      expect(result.current.error).toBeUndefined();
       expect(mockGet).toHaveBeenCalledWith(
         "/v1/users/{userId}/items/{itemId}",
         expect.objectContaining({
@@ -141,7 +141,7 @@ describe("useDismissibleItem", () => {
     it("dismisses an item", async () => {
       const mockItem = {
         id: "test-id",
-        dismissedAt: null,
+        dismissedAt: undefined,
         createdAt: "2023-01-01",
         updatedAt: "2023-01-01",
       };
@@ -174,7 +174,7 @@ describe("useDismissibleItem", () => {
         await result.current.dismiss();
       });
 
-      expect(result.current.dismissedOn).toBe("2023-01-02");
+      expect(result.current.dismissedAt).toBe("2023-01-02");
       expect(mockDelete).toHaveBeenCalledWith(
         "/v1/users/{userId}/items/{itemId}",
         {
@@ -221,13 +221,13 @@ describe("useDismissibleItem", () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      expect(result.current.dismissedOn).toBe("2023-01-02");
+      expect(result.current.dismissedAt).toBe("2023-01-02");
 
       await act(async () => {
         await result.current.restore();
       });
 
-      expect(result.current.dismissedOn).toBeNull();
+      expect(result.current.dismissedAt).toBeNull();
       expect(mockPost).toHaveBeenCalledWith(
         "/v1/users/{userId}/items/{itemId}",
         {
@@ -266,7 +266,7 @@ describe("useDismissibleItem", () => {
 
       // Should not be loading since we have cached data
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.dismissedOn).toBe("2023-01-01");
+      expect(result.current.dismissedAt).toBe("2023-01-01");
 
       await waitFor(() => {
         expect(mockGet).not.toHaveBeenCalled();
@@ -311,7 +311,7 @@ describe("useDismissibleItem", () => {
         expect(mockGet).toHaveBeenCalled();
       });
 
-      expect(result.current.dismissedOn).toBeNull();
+      expect(result.current.dismissedAt).toBeNull();
     });
 
     it("updates cache when item is dismissed", async () => {
@@ -379,7 +379,7 @@ describe("useDismissibleItem", () => {
         { wrapper: createWrapper() },
       );
 
-      expect(result.current.dismissedOn).toBe("2023-01-01");
+      expect(result.current.dismissedAt).toBe("2023-01-01");
       expect(localStorageMock.getItem).toHaveBeenCalledWith(
         "custom_test-user-test-id",
       );
@@ -486,7 +486,7 @@ describe("useDismissibleItem", () => {
     it("handles dismiss errors", async () => {
       const mockItem = {
         id: "test-id",
-        dismissedAt: null,
+        dismissedAt: undefined,
         createdAt: "2023-01-01",
         updatedAt: "2023-01-01",
       };

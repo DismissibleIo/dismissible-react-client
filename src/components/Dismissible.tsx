@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useDismissibleItem } from "../hooks/useDismissibleItem";
 import "./Dismissible.css";
 
@@ -100,7 +100,7 @@ export const Dismissible: React.FC<DismissibleProps> = ({
   cacheExpiration,
   ignoreErrors = false,
 }) => {
-  const { dismissedOn, isLoading, error, dismiss } = useDismissibleItem(
+  const { dismissedAt, isLoading, error, dismiss } = useDismissibleItem(
     itemId,
     {
       enableCache,
@@ -110,10 +110,13 @@ export const Dismissible: React.FC<DismissibleProps> = ({
   );
 
   const [isDismissing, setIsDismissing] = useState(false);
+  const [prevItemId, setPrevItemId] = useState(itemId);
 
-  useEffect(() => {
+  // Reset dismissing state when itemId changes
+  if (itemId !== prevItemId) {
+    setPrevItemId(itemId);
     setIsDismissing(false);
-  }, [itemId]);
+  }
 
   const handleDismiss = async () => {
     setIsDismissing(true);
@@ -137,7 +140,7 @@ export const Dismissible: React.FC<DismissibleProps> = ({
     return <ErrorComponent itemId={itemId} error={error} />;
   }
 
-  if (dismissedOn || isDismissing) {
+  if (dismissedAt || isDismissing) {
     return null;
   }
 

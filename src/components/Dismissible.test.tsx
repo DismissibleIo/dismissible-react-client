@@ -22,7 +22,7 @@ describe("Dismissible Component", () => {
 
   it("renders children when not dismissed", () => {
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: null,
       dismiss: mockDismiss,
@@ -42,7 +42,7 @@ describe("Dismissible Component", () => {
 
   it("renders nothing when dismissed", () => {
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: new Date().toISOString(),
+      dismissedAt: new Date().toISOString(),
       isLoading: false,
       error: null,
       dismiss: mockDismiss,
@@ -61,7 +61,7 @@ describe("Dismissible Component", () => {
 
   it("renders loading state with default LoadingComponent", () => {
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: true,
       error: null,
       dismiss: mockDismiss,
@@ -81,7 +81,7 @@ describe("Dismissible Component", () => {
 
   it("renders nothing when loading and LoadingComponent is null", () => {
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: true,
       error: null,
       dismiss: mockDismiss,
@@ -103,7 +103,7 @@ describe("Dismissible Component", () => {
   it("renders error state", () => {
     const mockError = new Error("Test error");
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: mockError,
       dismiss: mockDismiss,
@@ -126,7 +126,7 @@ describe("Dismissible Component", () => {
   it("calls dismiss function when dismiss button is clicked", async () => {
     const mockAsyncDismiss = vi.fn().mockResolvedValue(undefined);
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: null,
       dismiss: mockAsyncDismiss,
@@ -152,7 +152,7 @@ describe("Dismissible Component", () => {
     const mockOnDismiss = vi.fn();
     const mockAsyncDismiss = vi.fn().mockResolvedValue(undefined);
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: null,
       dismiss: mockAsyncDismiss,
@@ -179,7 +179,7 @@ describe("Dismissible Component", () => {
     const mockAsyncDismiss = vi.fn().mockRejectedValue(mockError);
 
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: null,
       dismiss: mockAsyncDismiss,
@@ -205,7 +205,7 @@ describe("Dismissible Component", () => {
 
   it("has correct accessibility attributes", () => {
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: null,
       dismiss: mockDismiss,
@@ -226,7 +226,7 @@ describe("Dismissible Component", () => {
 
   it("calls useDismissibleItem with correct id", () => {
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: null,
       dismiss: mockDismiss,
@@ -249,7 +249,7 @@ describe("Dismissible Component", () => {
 
   it("renders custom LoadingComponent when provided", () => {
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: true,
       error: null,
       dismiss: mockDismiss,
@@ -274,7 +274,7 @@ describe("Dismissible Component", () => {
   it("does not render error when ErrorComponent is null", () => {
     const mockError = new Error("Test error");
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: mockError,
       dismiss: mockDismiss,
@@ -296,7 +296,7 @@ describe("Dismissible Component", () => {
 
   it("does not render dismiss button when DismissButtonComponent is null", () => {
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: null,
       dismiss: mockDismiss,
@@ -317,7 +317,7 @@ describe("Dismissible Component", () => {
   it("shows error component when error occurs and ignoreErrors is false", () => {
     const mockError = new Error("Test error");
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: mockError,
       dismiss: mockDismiss,
@@ -340,7 +340,7 @@ describe("Dismissible Component", () => {
   it("shows content when error occurs and ignoreErrors is true", () => {
     const mockError = new Error("Test error");
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: mockError,
       dismiss: mockDismiss,
@@ -364,7 +364,7 @@ describe("Dismissible Component", () => {
   it("still shows content when ignoreErrors is true and ErrorComponent is null", () => {
     const mockError = new Error("Test error");
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: mockError,
       dismiss: mockDismiss,
@@ -388,7 +388,7 @@ describe("Dismissible Component", () => {
       .mockImplementationOnce(() => new Promise(() => {})); // Never resolves
 
     mockUseDismissibleItem.mockReturnValue({
-      dismissedOn: null,
+      dismissedAt: null,
       isLoading: false,
       error: null,
       dismiss: mockAsyncDismiss,

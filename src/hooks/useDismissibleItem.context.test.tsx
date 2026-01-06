@@ -314,7 +314,7 @@ describe("useDismissibleItem with Context", () => {
       },
     );
 
-    expect(result.current.dismissedOn).toBe("2023-01-01T01:00:00Z");
+    expect(result.current.dismissedAt).toBe("2023-01-01T01:00:00Z");
   });
 
   it("should handle JWT function errors gracefully", async () => {

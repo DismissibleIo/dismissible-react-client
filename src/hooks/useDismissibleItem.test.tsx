@@ -474,10 +474,8 @@ describe("useDismissibleItem", () => {
       );
 
       await waitFor(() => {
-        expect(result.current.error).not.toBeNull();
+        expect(result.current.error).toBeInstanceOf(Error);
       });
-
-      expect(result.current.error).toBeInstanceOf(Error);
       expect(result.current.error?.message).toBe(
         "Failed to fetch dismissible item",
       );

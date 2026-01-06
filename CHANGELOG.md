@@ -1,3 +1,21 @@
+# [2.0.0](https://github.com/DismissibleIo/dismissible-react-client/compare/v1.0.0...v2.0.0) (2026-01-06)
+
+
+### Bug Fixes
+
+* **test:** fixed test race condition ([#6](https://github.com/DismissibleIo/dismissible-react-client/issues/6)) ([da56324](https://github.com/DismissibleIo/dismissible-react-client/commit/da5632458c61a734d7bd55c89ef28d78afeabbf4))
+
+
+### Features
+
+* **api:** aligned with api response ([#5](https://github.com/DismissibleIo/dismissible-react-client/issues/5)) ([8fe9f87](https://github.com/DismissibleIo/dismissible-react-client/commit/8fe9f879691f88cb761a8b4293c824a6d4477db2))
+
+
+### BREAKING CHANGES
+
+* **api:** You need to update any of your hook consumers to check dismissedAt instead of
+dismissedOn. This aligns with the API response.
+
 # 1.0.0 (2025-12-21)
 
 

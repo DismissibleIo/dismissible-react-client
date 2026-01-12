@@ -27,6 +27,7 @@ This component is used with the [Dismissible API Server](https://github.com/Dism
 - **Persistent state** - Dismissal state is saved and restored across sessions when using the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api)
 - **Restore support** - Restore previously dismissed items programmatically
 - **JWT Authentication** - Built-in support for secure JWT-based authentication
+- **Custom HTTP Client** - Bring your own HTTP client (axios, ky, etc.) with custom headers, interceptors, and tracking
 - **Customizable** - Custom loading, error, and dismiss button components
 - **Accessible** - Built with accessibility best practices
 - **Hook-based** - Includes `useDismissibleItem` hook for custom implementations
@@ -124,8 +125,9 @@ Context provider that configures authentication and API settings. **Required** -
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
 | `userId` | `string` | ✅ | User ID for tracking dismissals per user |
+| `baseUrl` | `string` | ✅ | API base URL for your self-hosted server |
 | `jwt` | `string \| (() => string) \| (() => Promise<string>)` | ❌ | JWT token for secure authentication |
-| `baseUrl` | `string` | ❌ | API base URL (defaults to your self-hosted server) |
+| `client` | `DismissibleClient` | ❌ | Custom HTTP client implementation (uses default if not provided) |
 | `children` | `ReactNode` | ✅ | Components that will use the dismissible functionality |
 
 #### Example
@@ -185,6 +187,8 @@ function AppWithAsyncAuth() {
   );
 }
 ```
+
+See [Custom HTTP Client](#custom-http-client) for examples of using a custom client.
 
 ### `<Dismissible>` Component
 
@@ -542,6 +546,254 @@ function RestorableBanner({ itemId }) {
     </div>
   );
 }
+```
+
+## Advanced Usage
+
+### Custom HTTP Client
+
+By default, Dismissible uses a built-in HTTP client powered by `openapi-fetch`. However, you can provide your own HTTP client implementation by passing a `client` prop to the `DismissibleProvider`. This is useful when you need:
+
+- Custom headers (correlation IDs, tracing, etc.)
+- Request/response interceptors
+- Use a different HTTP library (axios, ky, etc.)
+- Analytics and logging
+- Custom error handling
+
+#### The DismissibleClient Interface
+
+Your custom client must implement the `DismissibleClient` interface:
+
+```typescript
+import type { DismissibleClient, DismissibleItem } from '@dismissible/react-client';
+
+interface DismissibleClient {
+  getOrCreate: (params: {
+    userId: string;
+    itemId: string;
+    baseUrl: string;
+    authHeaders: { Authorization?: string };
+    signal?: AbortSignal;
+  }) => Promise<DismissibleItem>;
+
+  dismiss: (params: {
+    userId: string;
+    itemId: string;
+    baseUrl: string;
+    authHeaders: { Authorization?: string };
+  }) => Promise<DismissibleItem>;
+
+  restore: (params: {
+    userId: string;
+    itemId: string;
+    baseUrl: string;
+    authHeaders: { Authorization?: string };
+  }) => Promise<DismissibleItem>;
+}
+```
+
+#### Example: Custom Client with Axios
+
+```tsx
+import axios from 'axios';
+import { v4 as uuid } from 'uuid';
+import { DismissibleProvider } from '@dismissible/react-client';
+import type { DismissibleClient } from '@dismissible/react-client';
+
+const axiosClient: DismissibleClient = {
+  getOrCreate: async ({ userId, itemId, baseUrl, authHeaders, signal }) => {
+    const response = await axios.get(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      {
+        headers: {
+          ...authHeaders,
+          'X-Correlation-ID': uuid(),
+        },
+        signal,
+      }
+    );
+    return response.data.data;
+  },
+
+  dismiss: async ({ userId, itemId, baseUrl, authHeaders }) => {
+    const response = await axios.delete(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      {
+        headers: {
+          ...authHeaders,
+          'X-Correlation-ID': uuid(),
+        },
+      }
+    );
+    return response.data.data;
+  },
+
+  restore: async ({ userId, itemId, baseUrl, authHeaders }) => {
+    const response = await axios.post(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      {},
+      {
+        headers: {
+          ...authHeaders,
+          'X-Correlation-ID': uuid(),
+        },
+      }
+    );
+    return response.data.data;
+  },
+};
+
+function App() {
+  return (
+    <DismissibleProvider
+      userId="user-123"
+      baseUrl="https://api.yourapp.com"
+      client={axiosClient}
+    >
+      <YourApp />
+    </DismissibleProvider>
+  );
+}
+```
+
+#### Example: Custom Client with Logging
+
+```tsx
+import type { DismissibleClient } from '@dismissible/react-client';
+
+const loggingClient: DismissibleClient = {
+  getOrCreate: async ({ userId, itemId, baseUrl, authHeaders, signal }) => {
+    console.log(`[Dismissible] Fetching item: ${itemId} for user: ${userId}`);
+    const startTime = performance.now();
+
+    const response = await fetch(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      {
+        method: 'GET',
+        headers: authHeaders,
+        signal,
+      }
+    );
+
+    const data = await response.json();
+    console.log(`[Dismissible] Fetched in ${performance.now() - startTime}ms`);
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch dismissible item');
+    }
+
+    return data.data;
+  },
+
+  dismiss: async ({ userId, itemId, baseUrl, authHeaders }) => {
+    console.log(`[Dismissible] Dismissing item: ${itemId}`);
+    
+    const response = await fetch(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      {
+        method: 'DELETE',
+        headers: authHeaders,
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to dismiss item');
+    }
+
+    console.log(`[Dismissible] Item dismissed at: ${data.data.dismissedAt}`);
+    return data.data;
+  },
+
+  restore: async ({ userId, itemId, baseUrl, authHeaders }) => {
+    console.log(`[Dismissible] Restoring item: ${itemId}`);
+    
+    const response = await fetch(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      {
+        method: 'POST',
+        headers: authHeaders,
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to restore item');
+    }
+
+    console.log(`[Dismissible] Item restored successfully`);
+    return data.data;
+  },
+};
+
+function App() {
+  return (
+    <DismissibleProvider
+      userId="user-123"
+      baseUrl="https://api.yourapp.com"
+      client={loggingClient}
+    >
+      <YourApp />
+    </DismissibleProvider>
+  );
+}
+```
+
+#### Example: Custom Client with Retry Logic
+
+```tsx
+import type { DismissibleClient } from '@dismissible/react-client';
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = 3
+): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || attempt === retries) {
+        return response;
+      }
+    } catch (error) {
+      if (attempt === retries) throw error;
+    }
+    // Exponential backoff
+    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100));
+  }
+  throw new Error('Max retries reached');
+}
+
+const retryClient: DismissibleClient = {
+  getOrCreate: async ({ userId, itemId, baseUrl, authHeaders, signal }) => {
+    const response = await fetchWithRetry(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      { method: 'GET', headers: authHeaders, signal }
+    );
+    const data = await response.json();
+    return data.data;
+  },
+
+  dismiss: async ({ userId, itemId, baseUrl, authHeaders }) => {
+    const response = await fetchWithRetry(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      { method: 'DELETE', headers: authHeaders }
+    );
+    const data = await response.json();
+    return data.data;
+  },
+
+  restore: async ({ userId, itemId, baseUrl, authHeaders }) => {
+    const response = await fetchWithRetry(
+      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      { method: 'POST', headers: authHeaders }
+    );
+    const data = await response.json();
+    return data.data;
+  },
+};
 ```
 
 ## Styling

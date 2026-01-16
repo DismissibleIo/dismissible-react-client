@@ -1,14 +1,11 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import createFetchClient from "openapi-fetch";
-import { components, paths } from "../generated/contract";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getCachedItem,
   setCachedItem,
   removeCachedItem,
 } from "../utils/localStorage";
 import { useDismissibleContext } from "../contexts/DismissibleContext";
-
-type DismissibleItem = components["schemas"]["DismissibleItemResponseDto"];
+import { DismissibleItem } from "../types/dismissible.types";
 
 export type IDismissibleItem = DismissibleItem;
 
@@ -58,18 +55,9 @@ export const useDismissibleItem = (
   } = options;
 
   const context = useDismissibleContext();
-  const { userId } = context;
+  const { userId, client, baseUrl } = context;
 
-  const fetchClient = useMemo(() => {
-    return createFetchClient<paths>({
-      baseUrl: context.baseUrl,
-      headers: {},
-    });
-  }, [context.baseUrl]);
-
-  const userCacheKey = useMemo(() => {
-    return `${userId}-${itemId}`;
-  }, [userId, itemId]);
+  const userCacheKey = `${userId}-${itemId}`;
 
   const previousCacheSettings = useRef<{
     enableCache: boolean;
@@ -124,28 +112,18 @@ export const useDismissibleItem = (
     try {
       const authHeaders = await context.getAuthHeaders();
 
-      const { data, error } = await fetchClient.GET(
-        "/v1/users/{userId}/items/{itemId}",
-        {
-          params: {
-            path: {
-              userId,
-              itemId: itemId,
-            },
-          },
-          headers: authHeaders,
-          signal: abortController.signal,
-        },
-      );
+      const data = await client.getOrCreate({
+        userId,
+        itemId,
+        baseUrl,
+        authHeaders,
+        signal: abortController.signal,
+      });
 
-      if (error || !data) {
-        throw new Error("Failed to fetch dismissible item");
-      }
-
-      setItem(data.data);
+      setItem(data);
 
       if (enableCache) {
-        setCachedItem(userCacheKey, data.data, cachePrefix);
+        setCachedItem(userCacheKey, data, cachePrefix);
       }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
@@ -164,7 +142,8 @@ export const useDismissibleItem = (
     enableCache,
     cachePrefix,
     cacheExpiration,
-    fetchClient,
+    client,
+    baseUrl,
     context,
   ]);
 
@@ -222,27 +201,17 @@ export const useDismissibleItem = (
     try {
       const authHeaders = await context.getAuthHeaders();
 
-      const { data, error } = await fetchClient.DELETE(
-        "/v1/users/{userId}/items/{itemId}",
-        {
-          params: {
-            path: {
-              userId,
-              itemId: itemId,
-            },
-          },
-          headers: authHeaders,
-        },
-      );
+      const data = await client.dismiss({
+        userId,
+        itemId,
+        baseUrl,
+        authHeaders,
+      });
 
-      if (error || !data) {
-        throw new Error("Failed to dismiss item");
-      }
-
-      setItem(data.data);
+      setItem(data);
 
       if (enableCache) {
-        setCachedItem(userCacheKey, data.data, cachePrefix);
+        setCachedItem(userCacheKey, data, cachePrefix);
       }
     } catch (err) {
       setError(
@@ -256,7 +225,8 @@ export const useDismissibleItem = (
     userCacheKey,
     enableCache,
     cachePrefix,
-    fetchClient,
+    client,
+    baseUrl,
     context,
   ]);
 
@@ -266,27 +236,17 @@ export const useDismissibleItem = (
     try {
       const authHeaders = await context.getAuthHeaders();
 
-      const { data, error } = await fetchClient.POST(
-        "/v1/users/{userId}/items/{itemId}",
-        {
-          params: {
-            path: {
-              userId,
-              itemId: itemId,
-            },
-          },
-          headers: authHeaders,
-        },
-      );
+      const data = await client.restore({
+        userId,
+        itemId,
+        baseUrl,
+        authHeaders,
+      });
 
-      if (error || !data) {
-        throw new Error("Failed to restore item");
-      }
-
-      setItem(data.data);
+      setItem(data);
 
       if (enableCache) {
-        setCachedItem(userCacheKey, data.data, cachePrefix);
+        setCachedItem(userCacheKey, data, cachePrefix);
       }
     } catch (err) {
       setError(
@@ -300,7 +260,8 @@ export const useDismissibleItem = (
     userCacheKey,
     enableCache,
     cachePrefix,
-    fetchClient,
+    client,
+    baseUrl,
     context,
   ]);
 

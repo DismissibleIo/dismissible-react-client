@@ -8,6 +8,98 @@
 export type JwtToken = string | (() => string) | (() => Promise<string>);
 
 /**
+ * Authentication headers type
+ */
+export interface AuthHeaders {
+  Authorization?: string;
+  [key: string]: string | undefined;
+}
+
+/**
+ * Dismissible item data returned from the API
+ */
+export interface DismissibleItem {
+  /** Unique identifier for the item */
+  itemId: string;
+  /** User identifier who created the item */
+  userId: string;
+  /** When the item was created (ISO 8601) */
+  createdAt: string;
+  /** When the item was dismissed (ISO 8601), undefined if not dismissed */
+  dismissedAt?: string;
+}
+
+// ============================================================================
+// Client Interface Types
+// ============================================================================
+
+/**
+ * Base parameters shared by all client methods
+ */
+export interface BaseDismissibleClientParams {
+  /** User ID for the current user */
+  userId: string;
+  /** The dismissible item ID */
+  itemId: string;
+  /** Base URL for API requests */
+  baseUrl: string;
+  /** Authentication headers */
+  authHeaders: AuthHeaders;
+}
+
+/**
+ * Parameters for the getOrCreate client method
+ */
+export interface GetOrCreateClientParams extends BaseDismissibleClientParams {
+  /** AbortSignal for request cancellation */
+  signal?: AbortSignal;
+}
+
+/**
+ * Parameters for the dismiss client method
+ */
+export type DismissClientParams = BaseDismissibleClientParams;
+
+/**
+ * Parameters for the restore client method
+ */
+export type RestoreClientParams = BaseDismissibleClientParams;
+
+/**
+ * Interface for custom HTTP clients
+ *
+ * Users can implement this interface to provide their own HTTP client
+ * with custom headers, tracking, interceptors, etc.
+ *
+ * @example
+ * ```typescript
+ * const myClient: DismissibleClient = {
+ *   getOrCreate: async ({ userId, itemId, baseUrl, authHeaders, signal }) => {
+ *     const res = await axios.get(`${baseUrl}/v1/users/${userId}/items/${itemId}`, {
+ *       headers: { ...authHeaders, 'X-Correlation-ID': uuid() },
+ *       signal
+ *     });
+ *     return res.data.data;
+ *   },
+ *   dismiss: async ({ userId, itemId, baseUrl, authHeaders }) => { ... },
+ *   restore: async ({ userId, itemId, baseUrl, authHeaders }) => { ... },
+ * };
+ * ```
+ */
+export interface DismissibleClient {
+  /** Get or create a dismissible item */
+  getOrCreate: (params: GetOrCreateClientParams) => Promise<DismissibleItem>;
+  /** Dismiss an item */
+  dismiss: (params: DismissClientParams) => Promise<DismissibleItem>;
+  /** Restore a dismissed item */
+  restore: (params: RestoreClientParams) => Promise<DismissibleItem>;
+}
+
+// ============================================================================
+// Provider & Context Types
+// ============================================================================
+
+/**
  * Configuration options for the DismissibleProvider
  */
 export interface DismissibleProviderProps {
@@ -17,6 +109,8 @@ export interface DismissibleProviderProps {
   jwt?: JwtToken;
   /** Base URL for API requests */
   baseUrl: string;
+  /** Custom HTTP client implementation (optional - uses default if not provided) */
+  client?: DismissibleClient;
   /** Child components */
   children: React.ReactNode;
 }
@@ -33,12 +127,6 @@ export interface DismissibleContextValue {
   baseUrl: string;
   /** Helper function to get authentication headers */
   getAuthHeaders: () => Promise<AuthHeaders>;
-}
-
-/**
- * Authentication headers type
- */
-export interface AuthHeaders {
-  Authorization?: string;
-  [key: string]: string | undefined;
+  /** The HTTP client to use for API requests */
+  client: DismissibleClient;
 }

@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { vi, beforeEach, describe, it, expect } from "vitest";
 import { DismissibleProvider } from "../contexts/DismissibleProvider";
 import { useDismissibleItem } from "./useDismissibleItem";
+import { DismissibleClient } from "../types/dismissible.types";
 
 const { mockGet, mockDelete } = vi.hoisted(() => {
   const mockGet = vi.fn();
@@ -354,5 +355,238 @@ describe("useDismissibleItem with Context", () => {
     });
 
     consoleSpy.mockRestore();
+  });
+});
+
+describe("useDismissibleItem with Custom Client", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorageMock.clear();
+  });
+
+  it("should call custom client getOrCreate on mount", async () => {
+    const mockItem = {
+      itemId: "test-item",
+      userId: "user-123",
+      createdAt: "2023-01-01T00:00:00Z",
+      dismissedAt: undefined,
+    };
+
+    const customClient: DismissibleClient = {
+      getOrCreate: vi.fn().mockResolvedValue(mockItem),
+      dismiss: vi.fn(),
+      restore: vi.fn(),
+    };
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <DismissibleProvider
+        userId="user-123"
+        jwt="test-token"
+        baseUrl="https://api.custom.com"
+        client={customClient}
+      >
+        {children}
+      </DismissibleProvider>
+    );
+
+    const { result } = renderHook(
+      () => useDismissibleItem("test-item", { enableCache: false }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(customClient.getOrCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-123",
+        itemId: "test-item",
+        baseUrl: "https://api.custom.com",
+        authHeaders: { Authorization: "Bearer test-token" },
+      }),
+    );
+    expect(result.current.item).toEqual(mockItem);
+  });
+
+  it("should call custom client dismiss when dismiss is called", async () => {
+    const mockItem = {
+      itemId: "test-item",
+      userId: "user-123",
+      createdAt: "2023-01-01T00:00:00Z",
+      dismissedAt: undefined,
+    };
+
+    const dismissedItem = {
+      ...mockItem,
+      dismissedAt: "2023-01-02T00:00:00Z",
+    };
+
+    const customClient: DismissibleClient = {
+      getOrCreate: vi.fn().mockResolvedValue(mockItem),
+      dismiss: vi.fn().mockResolvedValue(dismissedItem),
+      restore: vi.fn(),
+    };
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <DismissibleProvider
+        userId="user-123"
+        jwt="test-token"
+        baseUrl="https://api.custom.com"
+        client={customClient}
+      >
+        {children}
+      </DismissibleProvider>
+    );
+
+    const { result } = renderHook(
+      () => useDismissibleItem("test-item", { enableCache: false }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.dismiss();
+    });
+
+    expect(customClient.dismiss).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-123",
+        itemId: "test-item",
+        baseUrl: "https://api.custom.com",
+        authHeaders: { Authorization: "Bearer test-token" },
+      }),
+    );
+    expect(result.current.dismissedAt).toBe("2023-01-02T00:00:00Z");
+  });
+
+  it("should call custom client restore when restore is called", async () => {
+    const dismissedItem = {
+      itemId: "test-item",
+      userId: "user-123",
+      createdAt: "2023-01-01T00:00:00Z",
+      dismissedAt: "2023-01-02T00:00:00Z",
+    };
+
+    const restoredItem = {
+      ...dismissedItem,
+      dismissedAt: undefined,
+    };
+
+    const customClient: DismissibleClient = {
+      getOrCreate: vi.fn().mockResolvedValue(dismissedItem),
+      dismiss: vi.fn(),
+      restore: vi.fn().mockResolvedValue(restoredItem),
+    };
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <DismissibleProvider
+        userId="user-123"
+        jwt="test-token"
+        baseUrl="https://api.custom.com"
+        client={customClient}
+      >
+        {children}
+      </DismissibleProvider>
+    );
+
+    const { result } = renderHook(
+      () => useDismissibleItem("test-item", { enableCache: false }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.dismissedAt).toBe("2023-01-02T00:00:00Z");
+
+    await act(async () => {
+      await result.current.restore();
+    });
+
+    expect(customClient.restore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-123",
+        itemId: "test-item",
+        baseUrl: "https://api.custom.com",
+        authHeaders: { Authorization: "Bearer test-token" },
+      }),
+    );
+    expect(result.current.dismissedAt).toBeUndefined();
+  });
+
+  it("should pass signal to custom client getOrCreate for cancellation", async () => {
+    const mockItem = {
+      itemId: "test-item",
+      userId: "user-123",
+      createdAt: "2023-01-01T00:00:00Z",
+      dismissedAt: undefined,
+    };
+
+    const customClient: DismissibleClient = {
+      getOrCreate: vi.fn().mockResolvedValue(mockItem),
+      dismiss: vi.fn(),
+      restore: vi.fn(),
+    };
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <DismissibleProvider
+        userId="user-123"
+        jwt="test-token"
+        baseUrl="https://api.custom.com"
+        client={customClient}
+      >
+        {children}
+      </DismissibleProvider>
+    );
+
+    const { result } = renderHook(
+      () => useDismissibleItem("test-item", { enableCache: false }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(customClient.getOrCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    );
+  });
+
+  it("should handle custom client errors gracefully", async () => {
+    const customClient: DismissibleClient = {
+      getOrCreate: vi.fn().mockRejectedValue(new Error("Custom client error")),
+      dismiss: vi.fn(),
+      restore: vi.fn(),
+    };
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <DismissibleProvider
+        userId="user-123"
+        jwt="test-token"
+        baseUrl="https://api.custom.com"
+        client={customClient}
+      >
+        {children}
+      </DismissibleProvider>
+    );
+
+    const { result } = renderHook(
+      () => useDismissibleItem("test-item", { enableCache: false }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.error).toBeDefined();
+    });
+
+    expect(result.current.error?.message).toBe("Custom client error");
   });
 });

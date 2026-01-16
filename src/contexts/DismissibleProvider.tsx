@@ -5,26 +5,8 @@ import {
   DismissibleContextValue,
 } from "../types/dismissible.types";
 import { getAuthHeaders } from "../utils/auth.utils";
-
-/**
- * Checks if a URL uses secure transport (https or localhost)
- * @returns Object with isSecure flag and parsed URL info
- */
-const checkUrlSecurity = (
-  url: string,
-): { isSecure: boolean; isLocalhost: boolean; isHttps: boolean } => {
-  try {
-    const parsed = new URL(url);
-    const isLocalhost =
-      parsed.hostname === "localhost" ||
-      parsed.hostname === "127.0.0.1" ||
-      parsed.hostname === "[::1]";
-    const isHttps = parsed.protocol === "https:";
-    return { isSecure: isHttps || isLocalhost, isLocalhost, isHttps };
-  } catch {
-    return { isSecure: false, isLocalhost: false, isHttps: false };
-  }
-};
+import { createDefaultClient } from "../clients/defaultClient";
+import { checkUrlSecurity } from "../utils/url.utils";
 
 /**
  * Provider component for managing dismissible authentication state
@@ -53,12 +35,35 @@ const checkUrlSecurity = (
  * >
  *   <App />
  * </DismissibleProvider>
+ *
+ * // With custom HTTP client
+ * const myClient: DismissibleClient = {
+ *   getOrCreate: async ({ resolvedPath, baseUrl, authHeaders, signal }) => {
+ *     const res = await axios.get(`${baseUrl}${resolvedPath}`, {
+ *       headers: { ...authHeaders, 'X-Correlation-ID': uuid() },
+ *       signal
+ *     });
+ *     return res.data.data;
+ *   },
+ *   dismiss: async (params) => { ... },
+ *   restore: async (params) => { ... },
+ * };
+ *
+ * <DismissibleProvider
+ *   userId="user-123"
+ *   jwt={token}
+ *   baseUrl="https://api.dismissible.io"
+ *   client={myClient}
+ * >
+ *   <App />
+ * </DismissibleProvider>
  * ```
  */
 export const DismissibleProvider: React.FC<DismissibleProviderProps> = ({
   userId,
   jwt,
   baseUrl,
+  client,
   children,
 }) => {
   const { isSecure } = checkUrlSecurity(baseUrl);
@@ -70,14 +75,20 @@ export const DismissibleProvider: React.FC<DismissibleProviderProps> = ({
     );
   }
 
+  const resolvedClient = useMemo(
+    () => client ?? createDefaultClient(baseUrl),
+    [client, baseUrl],
+  );
+
   const contextValue: DismissibleContextValue = useMemo(
     () => ({
       userId,
       jwt,
       baseUrl,
       getAuthHeaders: async () => await getAuthHeaders(jwt),
+      client: resolvedClient,
     }),
-    [userId, jwt, baseUrl],
+    [userId, jwt, baseUrl, resolvedClient],
   );
 
   return (

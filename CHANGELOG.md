@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/DismissibleIo/dismissible-react-client/compare/v2.0.0...v2.1.0) (2026-01-16)
+
+
+### Features
+
+* **fetch:** custom fetch client can be used via the provider ([#7](https://github.com/DismissibleIo/dismissible-react-client/issues/7)) ([1083205](https://github.com/DismissibleIo/dismissible-react-client/commit/108320575c980d7bd51f2185e22f4fc562db4cfe))
+
 # [2.0.0](https://github.com/DismissibleIo/dismissible-react-client/compare/v1.0.0...v2.0.0) (2026-01-06)
 
 

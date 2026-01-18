@@ -54,8 +54,8 @@ export const useDismissibleItem = (
     cacheExpiration,
   } = options;
 
-  const context = useDismissibleContext();
-  const { userId, client, baseUrl } = context;
+  const { userId, client, baseUrl, getAuthHeaders, batchScheduler } =
+    useDismissibleContext();
 
   const userCacheKey = `${userId}-${itemId}`;
 
@@ -96,6 +96,8 @@ export const useDismissibleItem = (
         cacheExpiration,
       );
       if (cachedItem?.dismissedAt) {
+        // Prime the batch scheduler cache with dismissed items from localStorage
+        batchScheduler.primeCache(cachedItem);
         setItem(cachedItem);
         setIsLoading(false);
         return;
@@ -110,15 +112,13 @@ export const useDismissibleItem = (
     setError(undefined);
 
     try {
-      const authHeaders = await context.getAuthHeaders();
+      // Use batch scheduler for coalesced fetching
+      const data = await batchScheduler.getItem(itemId);
 
-      const data = await client.getOrCreate({
-        userId,
-        itemId,
-        baseUrl,
-        authHeaders,
-        signal: abortController.signal,
-      });
+      // Check if request was aborted before updating state
+      if (abortController.signal.aborted) {
+        return;
+      }
 
       setItem(data);
 
@@ -129,22 +129,24 @@ export const useDismissibleItem = (
       if (err instanceof Error && err.name === "AbortError") {
         return;
       }
+      if (abortController.signal.aborted) {
+        return;
+      }
       setError(
         err instanceof Error ? err : new Error("Unknown error occurred"),
       );
     } finally {
-      setIsLoading(false);
+      if (!abortController.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [
     itemId,
-    userId,
     userCacheKey,
     enableCache,
     cachePrefix,
     cacheExpiration,
-    client,
-    baseUrl,
-    context,
+    batchScheduler,
   ]);
 
   useEffect(() => {
@@ -199,7 +201,7 @@ export const useDismissibleItem = (
     setError(undefined);
 
     try {
-      const authHeaders = await context.getAuthHeaders();
+      const authHeaders = await getAuthHeaders();
 
       const data = await client.dismiss({
         userId,
@@ -209,6 +211,9 @@ export const useDismissibleItem = (
       });
 
       setItem(data);
+
+      // Update batch scheduler cache so subsequent reads get dismissed state
+      batchScheduler.updateCache(data);
 
       if (enableCache) {
         setCachedItem(userCacheKey, data, cachePrefix);
@@ -227,14 +232,15 @@ export const useDismissibleItem = (
     cachePrefix,
     client,
     baseUrl,
-    context,
+    getAuthHeaders,
+    batchScheduler,
   ]);
 
   const restore = useCallback(async (): Promise<void> => {
     setError(undefined);
 
     try {
-      const authHeaders = await context.getAuthHeaders();
+      const authHeaders = await getAuthHeaders();
 
       const data = await client.restore({
         userId,
@@ -244,6 +250,9 @@ export const useDismissibleItem = (
       });
 
       setItem(data);
+
+      // Update batch scheduler cache so subsequent reads get restored state
+      batchScheduler.updateCache(data);
 
       if (enableCache) {
         setCachedItem(userCacheKey, data, cachePrefix);
@@ -262,7 +271,8 @@ export const useDismissibleItem = (
     cachePrefix,
     client,
     baseUrl,
-    context,
+    getAuthHeaders,
+    batchScheduler,
   ]);
 
   return {

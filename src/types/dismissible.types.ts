@@ -66,6 +66,22 @@ export type DismissClientParams = BaseDismissibleClientParams;
 export type RestoreClientParams = BaseDismissibleClientParams;
 
 /**
+ * Parameters for the batchGetOrCreate client method
+ */
+export interface BatchGetOrCreateClientParams {
+  /** User ID for the current user */
+  userId: string;
+  /** Array of dismissible item IDs to fetch (max 50) */
+  itemIds: string[];
+  /** Base URL for API requests */
+  baseUrl: string;
+  /** Authentication headers */
+  authHeaders: AuthHeaders;
+  /** AbortSignal for request cancellation */
+  signal?: AbortSignal;
+}
+
+/**
  * Interface for custom HTTP clients
  *
  * Users can implement this interface to provide their own HTTP client
@@ -89,6 +105,10 @@ export type RestoreClientParams = BaseDismissibleClientParams;
 export interface DismissibleClient {
   /** Get or create a dismissible item */
   getOrCreate: (params: GetOrCreateClientParams) => Promise<DismissibleItem>;
+  /** Batch get or create multiple dismissible items (max 50) */
+  batchGetOrCreate: (
+    params: BatchGetOrCreateClientParams,
+  ) => Promise<DismissibleItem[]>;
   /** Dismiss an item */
   dismiss: (params: DismissClientParams) => Promise<DismissibleItem>;
   /** Restore a dismissed item */
@@ -116,6 +136,20 @@ export interface DismissibleProviderProps {
 }
 
 /**
+ * Batch scheduler interface for request coalescing
+ */
+export interface IBatchScheduler {
+  /** Request a dismissible item (batched with other requests in same tick) */
+  getItem: (itemId: string) => Promise<DismissibleItem>;
+  /** Pre-populate cache with an item */
+  primeCache: (item: DismissibleItem) => void;
+  /** Update an item in the cache */
+  updateCache: (item: DismissibleItem) => void;
+  /** Clear the in-memory cache */
+  clearCache: () => void;
+}
+
+/**
  * Context value provided by DismissibleProvider
  */
 export interface DismissibleContextValue {
@@ -129,4 +163,6 @@ export interface DismissibleContextValue {
   getAuthHeaders: () => Promise<AuthHeaders>;
   /** The HTTP client to use for API requests */
   client: DismissibleClient;
+  /** Batch scheduler for coalescing getOrCreate requests */
+  batchScheduler: IBatchScheduler;
 }

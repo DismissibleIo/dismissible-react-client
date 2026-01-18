@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { DismissibleContext } from "./DismissibleContext";
 import {
   DismissibleProviderProps,
@@ -7,6 +7,7 @@ import {
 import { getAuthHeaders } from "../utils/auth.utils";
 import { createDefaultClient } from "../clients/defaultClient";
 import { checkUrlSecurity } from "../utils/url.utils";
+import { BatchScheduler } from "../utils/BatchScheduler";
 
 /**
  * Provider component for managing dismissible authentication state
@@ -66,18 +67,39 @@ export const DismissibleProvider: React.FC<DismissibleProviderProps> = ({
   client,
   children,
 }) => {
-  const { isSecure } = checkUrlSecurity(baseUrl);
-  if (!isSecure) {
-    console.warn(
-      `[dismissible] Insecure baseUrl "${baseUrl}". ` +
-        `Use https:// in production (or localhost for development). ` +
-        `JWT tokens may be exposed over insecure connections.`,
-    );
-  }
+  // Warn about insecure baseUrl only when it changes
+  useEffect(() => {
+    const { isSecure } = checkUrlSecurity(baseUrl);
+    if (!isSecure) {
+      console.warn(
+        `[dismissible] Insecure baseUrl "${baseUrl}". ` +
+          `Use https:// in production (or localhost for development). ` +
+          `JWT tokens may be exposed over insecure connections.`,
+      );
+    }
+  }, [baseUrl]);
 
   const resolvedClient = useMemo(
     () => client ?? createDefaultClient(baseUrl),
     [client, baseUrl],
+  );
+
+  const getAuthHeadersFn = useMemo(
+    () => async () => await getAuthHeaders(jwt),
+    [jwt],
+  );
+
+  // Create BatchScheduler using useMemo to avoid recreating on every render
+  // It will be recreated when userId, baseUrl, or client changes
+  const batchScheduler = useMemo(
+    () =>
+      new BatchScheduler({
+        userId,
+        baseUrl,
+        client: resolvedClient,
+        getAuthHeaders: getAuthHeadersFn,
+      }),
+    [userId, baseUrl, resolvedClient, getAuthHeadersFn],
   );
 
   const contextValue: DismissibleContextValue = useMemo(
@@ -85,10 +107,11 @@ export const DismissibleProvider: React.FC<DismissibleProviderProps> = ({
       userId,
       jwt,
       baseUrl,
-      getAuthHeaders: async () => await getAuthHeaders(jwt),
+      getAuthHeaders: getAuthHeadersFn,
       client: resolvedClient,
+      batchScheduler,
     }),
-    [userId, jwt, baseUrl, resolvedClient],
+    [userId, jwt, baseUrl, getAuthHeadersFn, resolvedClient, batchScheduler],
   );
 
   return (

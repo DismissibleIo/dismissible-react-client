@@ -17,6 +17,26 @@ vi.mock("openapi-fetch", () => ({
   }),
 }));
 
+// Helper to setup batch POST mock (used for initial fetch via BatchScheduler)
+const setupBatchMock = (
+  items: Array<{ itemId: string; [key: string]: unknown }>,
+) => {
+  mockPost.mockImplementation(async (path: string) => {
+    if (path === "/v1/users/{userId}/items") {
+      return {
+        data: { data: items },
+        error: null,
+      };
+    }
+    // Individual restore endpoint
+    const item = items.find((i) => path.includes(i.itemId));
+    return {
+      data: { data: item },
+      error: null,
+    };
+  });
+};
+
 import { useDismissibleItem } from "./useDismissibleItem";
 import { DismissibleProvider } from "../contexts/DismissibleProvider";
 
@@ -62,18 +82,15 @@ describe("useDismissibleItem", () => {
   });
 
   describe("without caching", () => {
-    it("fetches item data on mount", async () => {
+    it("fetches item data on mount via batch endpoint", async () => {
       const mockItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: null,
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: mockItem },
-        error: null,
-      });
+      setupBatchMock([mockItem]);
 
       const { result } = renderHook(
         () => useDismissibleItem("test-id", { enableCache: false }),
@@ -81,37 +98,37 @@ describe("useDismissibleItem", () => {
       );
 
       await waitFor(() => {
-        expect(mockGet).toHaveBeenCalled();
+        expect(result.current.isLoading).toBe(false);
       });
 
       expect(result.current.dismissedAt).toBeNull();
       expect(result.current.error).toBeUndefined();
-      expect(mockGet).toHaveBeenCalledWith(
-        "/v1/users/{userId}/items/{itemId}",
+      // Verify batch endpoint was called
+      expect(mockPost).toHaveBeenCalledWith(
+        "/v1/users/{userId}/items",
         expect.objectContaining({
           params: {
             path: {
               userId: "test-user",
-              itemId: "test-id",
             },
+          },
+          body: {
+            items: ["test-id"],
           },
           headers: {},
         }),
       );
     });
 
-    it("only passes path parameters in API request", async () => {
+    it("uses batch endpoint with userId in path", async () => {
       const mockItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: undefined,
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: mockItem },
-        error: null,
-      });
+      setupBatchMock([mockItem]);
 
       const { result } = renderHook(
         () => useDismissibleItem("test-id", { enableCache: false }),
@@ -119,19 +136,21 @@ describe("useDismissibleItem", () => {
       );
 
       await waitFor(() => {
-        expect(mockGet).toHaveBeenCalled();
+        expect(result.current.isLoading).toBe(false);
       });
 
       expect(result.current.dismissedAt).toBeUndefined();
       expect(result.current.error).toBeUndefined();
-      expect(mockGet).toHaveBeenCalledWith(
-        "/v1/users/{userId}/items/{itemId}",
+      expect(mockPost).toHaveBeenCalledWith(
+        "/v1/users/{userId}/items",
         expect.objectContaining({
           params: {
             path: {
               userId: "test-user",
-              itemId: "test-id",
             },
+          },
+          body: {
+            items: ["test-id"],
           },
           headers: {},
         }),
@@ -140,10 +159,10 @@ describe("useDismissibleItem", () => {
 
     it("dismisses an item", async () => {
       const mockItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: undefined,
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
       const dismissedItem = {
@@ -151,10 +170,7 @@ describe("useDismissibleItem", () => {
         dismissedAt: "2023-01-02",
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: mockItem },
-        error: null,
-      });
+      setupBatchMock([mockItem]);
 
       mockDelete.mockResolvedValueOnce({
         data: { data: dismissedItem },
@@ -191,10 +207,10 @@ describe("useDismissibleItem", () => {
 
     it("restores a dismissed item", async () => {
       const dismissedItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: "2023-01-02",
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
       const restoredItem = {
@@ -202,14 +218,19 @@ describe("useDismissibleItem", () => {
         dismissedAt: null,
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: dismissedItem },
-        error: null,
-      });
-
-      mockPost.mockResolvedValueOnce({
-        data: { data: restoredItem },
-        error: null,
+      // Setup batch mock for initial fetch
+      mockPost.mockImplementation(async (path: string) => {
+        if (path === "/v1/users/{userId}/items") {
+          return {
+            data: { data: [dismissedItem] },
+            error: null,
+          };
+        }
+        // Individual restore endpoint
+        return {
+          data: { data: restoredItem },
+          error: null,
+        };
       });
 
       const { result } = renderHook(
@@ -246,10 +267,10 @@ describe("useDismissibleItem", () => {
   describe("with caching enabled", () => {
     it("uses cached data if available", async () => {
       const cachedItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: "2023-01-01",
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
       localStorageMock.setItem(
@@ -269,16 +290,20 @@ describe("useDismissibleItem", () => {
       expect(result.current.dismissedAt).toBe("2023-01-01");
 
       await waitFor(() => {
-        expect(mockGet).not.toHaveBeenCalled();
+        // Should not call batch endpoint since we have cached dismissed data
+        expect(mockPost).not.toHaveBeenCalledWith(
+          "/v1/users/{userId}/items",
+          expect.anything(),
+        );
       });
     });
 
     it("fetches from API if cache is expired", async () => {
       const cachedItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: "2023-01-01",
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
       localStorageMock.setItem(
@@ -294,10 +319,7 @@ describe("useDismissibleItem", () => {
         dismissedAt: null,
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: freshItem },
-        error: null,
-      });
+      setupBatchMock([freshItem]);
 
       const { result } = renderHook(
         () =>
@@ -308,7 +330,10 @@ describe("useDismissibleItem", () => {
       );
 
       await waitFor(() => {
-        expect(mockGet).toHaveBeenCalled();
+        expect(mockPost).toHaveBeenCalledWith(
+          "/v1/users/{userId}/items",
+          expect.anything(),
+        );
       });
 
       expect(result.current.dismissedAt).toBeNull();
@@ -316,10 +341,10 @@ describe("useDismissibleItem", () => {
 
     it("updates cache when item is dismissed", async () => {
       const mockItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: null,
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
       const dismissedItem = {
@@ -327,10 +352,7 @@ describe("useDismissibleItem", () => {
         dismissedAt: "2023-01-02",
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: mockItem },
-        error: null,
-      });
+      setupBatchMock([mockItem]);
 
       mockDelete.mockResolvedValueOnce({
         data: { data: dismissedItem },
@@ -357,10 +379,10 @@ describe("useDismissibleItem", () => {
 
     it("uses custom cache prefix", () => {
       const cachedItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: "2023-01-01",
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
       localStorageMock.setItem(
@@ -387,10 +409,10 @@ describe("useDismissibleItem", () => {
 
     it("doesn't use cache for non-dismissed items", async () => {
       const cachedItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: null,
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
       localStorageMock.setItem(
@@ -401,26 +423,26 @@ describe("useDismissibleItem", () => {
         }),
       );
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: cachedItem },
-        error: null,
-      });
+      setupBatchMock([cachedItem]);
 
       renderHook(() => useDismissibleItem("test-id"), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => {
-        expect(mockGet).toHaveBeenCalled();
+        expect(mockPost).toHaveBeenCalledWith(
+          "/v1/users/{userId}/items",
+          expect.anything(),
+        );
       });
     });
 
     it("updates cache when item is restored", async () => {
       const dismissedItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: "2023-01-02",
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
       const restoredItem = {
@@ -428,14 +450,19 @@ describe("useDismissibleItem", () => {
         dismissedAt: null,
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: dismissedItem },
-        error: null,
-      });
-
-      mockPost.mockResolvedValueOnce({
-        data: { data: restoredItem },
-        error: null,
+      // Setup batch mock for initial fetch and restore endpoint
+      mockPost.mockImplementation(async (path: string) => {
+        if (path === "/v1/users/{userId}/items") {
+          return {
+            data: { data: [dismissedItem] },
+            error: null,
+          };
+        }
+        // Individual restore endpoint
+        return {
+          data: { data: restoredItem },
+          error: null,
+        };
       });
 
       const { result } = renderHook(() => useDismissibleItem("test-id"), {
@@ -459,7 +486,7 @@ describe("useDismissibleItem", () => {
 
   describe("error handling", () => {
     it("handles API errors gracefully", async () => {
-      mockGet.mockResolvedValueOnce({
+      mockPost.mockResolvedValueOnce({
         data: null,
         error: {
           error: {
@@ -468,7 +495,7 @@ describe("useDismissibleItem", () => {
         },
       });
 
-      const { result } = renderHook(
+      const { result, unmount } = renderHook(
         () => useDismissibleItem("test-id", { enableCache: false }),
         { wrapper: createWrapper() },
       );
@@ -477,22 +504,23 @@ describe("useDismissibleItem", () => {
         expect(result.current.error).toBeInstanceOf(Error);
       });
       expect(result.current.error?.message).toBe(
-        "Failed to fetch dismissible item",
+        "Failed to batch fetch dismissible items",
       );
+
+      // Clean up to prevent unhandled rejection warnings
+      unmount();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     it("handles dismiss errors", async () => {
       const mockItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: undefined,
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: mockItem },
-        error: null,
-      });
+      setupBatchMock([mockItem]);
 
       mockDelete.mockResolvedValueOnce({
         data: null,
@@ -521,24 +549,29 @@ describe("useDismissibleItem", () => {
 
     it("handles restore errors", async () => {
       const dismissedItem = {
-        id: "test-id",
+        itemId: "test-id",
+        userId: "test-user",
         dismissedAt: "2023-01-02",
         createdAt: "2023-01-01",
-        updatedAt: "2023-01-01",
       };
 
-      mockGet.mockResolvedValueOnce({
-        data: { data: dismissedItem },
-        error: null,
-      });
-
-      mockPost.mockResolvedValueOnce({
-        data: null,
-        error: {
+      // Setup batch mock for initial fetch but make restore fail
+      mockPost.mockImplementation(async (path: string) => {
+        if (path === "/v1/users/{userId}/items") {
+          return {
+            data: { data: [dismissedItem] },
+            error: null,
+          };
+        }
+        // Individual restore endpoint - fail
+        return {
+          data: null,
           error: {
-            message: "Failed to restore",
+            error: {
+              message: "Failed to restore",
+            },
           },
-        },
+        };
       });
 
       const { result } = renderHook(

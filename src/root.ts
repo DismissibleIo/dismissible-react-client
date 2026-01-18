@@ -5,3 +5,4 @@ export * from "./contexts/DismissibleProvider";
 export * from "./types/dismissible.types";
 export * from "./utils/auth.utils";
 export * from "./clients/defaultClient";
+export * from "./utils/BatchScheduler";

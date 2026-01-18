@@ -4,6 +4,7 @@ import {
   DismissibleClient,
   DismissibleItem,
   GetOrCreateClientParams,
+  BatchGetOrCreateClientParams,
   DismissClientParams,
   RestoreClientParams,
 } from "../types/dismissible.types";
@@ -59,6 +60,34 @@ export const createDefaultClient = (baseUrl: string): DismissibleClient => {
 
       if (error || !data) {
         throw new Error("Failed to fetch dismissible item");
+      }
+
+      return data.data;
+    },
+
+    batchGetOrCreate: async (
+      params: BatchGetOrCreateClientParams,
+    ): Promise<DismissibleItem[]> => {
+      const { userId, itemIds, authHeaders, signal } = params;
+
+      const { data, error } = await fetchClient.POST(
+        "/v1/users/{userId}/items",
+        {
+          params: {
+            path: {
+              userId,
+            },
+          },
+          body: {
+            items: itemIds,
+          },
+          headers: authHeaders,
+          signal,
+        },
+      );
+
+      if (error || !data) {
+        throw new Error("Failed to batch fetch dismissible items");
       }
 
       return data.data;

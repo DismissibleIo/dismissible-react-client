@@ -228,9 +228,33 @@ const JWTTokenDemo: React.FC = () => {
 
 const defaultUserId = "demo-user";
 
+// Create mock handlers that support both batch and individual endpoints
 const createMockHandlers = (ids: string[]) => {
-  const handlers: ReturnType<typeof http.get>[] = [];
+  const handlers: ReturnType<typeof http.get | typeof http.post>[] = [];
 
+  // Batch endpoint (POST /v1/users/:userId/items)
+  handlers.push(
+    http.post(`${baseUrl}/v1/users/:userId/items`, async ({ request }) => {
+      const body = (await request.json()) as { items: string[] };
+      const requestedIds = body.items || [];
+
+      console.log(
+        `[Batch API] Fetching ${requestedIds.length} items in single request:`,
+        requestedIds,
+      );
+
+      const items = requestedIds.map((itemId: string) => ({
+        itemId,
+        userId: defaultUserId,
+        dismissedAt: undefined,
+        createdAt: "2025-07-28T12:00:00Z",
+      }));
+
+      return HttpResponse.json({ data: items });
+    }),
+  );
+
+  // Individual GET endpoint (fallback, rarely used now)
   ids.forEach((id) => {
     handlers.push(
       http.get(`${baseUrl}/v1/users/:userId/items/:itemId`, () => {
@@ -245,6 +269,7 @@ const createMockHandlers = (ids: string[]) => {
       }),
     );
 
+    // Dismiss endpoint (DELETE)
     handlers.push(
       http.delete(`${baseUrl}/v1/users/:userId/items/:itemId`, () => {
         return HttpResponse.json({
@@ -252,6 +277,20 @@ const createMockHandlers = (ids: string[]) => {
             itemId: id,
             userId: defaultUserId,
             dismissedAt: new Date().toISOString(),
+            createdAt: "2025-07-28T12:00:00Z",
+          },
+        });
+      }),
+    );
+
+    // Restore endpoint (POST to individual item)
+    handlers.push(
+      http.post(`${baseUrl}/v1/users/:userId/items/:itemId`, () => {
+        return HttpResponse.json({
+          data: {
+            itemId: id,
+            userId: defaultUserId,
+            dismissedAt: undefined,
             createdAt: "2025-07-28T12:00:00Z",
           },
         });
@@ -436,6 +475,125 @@ export const WithExistingDismissibleComponent: Story = {
       handlers: createMockHandlers([
         "dismissible-component-demo",
         "dismissible-component-demo-2",
+      ]),
+    },
+  },
+};
+
+/**
+ * Demonstrates batch fetching behavior where multiple Dismissible components
+ * are fetched in a single API call using the batch endpoint.
+ *
+ * Open the browser console to see the batch API call being made with all
+ * item IDs in a single request instead of individual requests for each item.
+ */
+export const BatchFetching: Story = {
+  args: {
+    userId: defaultUserId,
+    jwt: "demo-jwt-token",
+    baseUrl: baseUrl,
+    children: (
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div
+          style={{
+            padding: "16px",
+            background: "#d4edda",
+            border: "1px solid #c3e6cb",
+            borderRadius: "4px",
+            marginBottom: "8px",
+          }}
+        >
+          <h3 style={{ margin: "0 0 8px 0", color: "#155724" }}>
+            Batch Fetching Demo
+          </h3>
+          <p style={{ margin: 0, color: "#155724" }}>
+            <strong>Open the browser console</strong> to see that all 5 items
+            below are fetched in a <strong>single batch API call</strong>{" "}
+            instead of 5 individual requests. This reduces network overhead
+            significantly!
+          </p>
+        </div>
+
+        <Dismissible itemId="batch-item-1" enableCache={false}>
+          <div
+            style={{
+              padding: "16px",
+              background: "#e7f3ff",
+              border: "1px solid #b8daff",
+              borderRadius: "4px",
+            }}
+          >
+            <h4>Notification 1</h4>
+            <p>First dismissible item in the batch.</p>
+          </div>
+        </Dismissible>
+
+        <Dismissible itemId="batch-item-2" enableCache={false}>
+          <div
+            style={{
+              padding: "16px",
+              background: "#fff3cd",
+              border: "1px solid #ffeaa7",
+              borderRadius: "4px",
+            }}
+          >
+            <h4>Notification 2</h4>
+            <p>Second dismissible item in the batch.</p>
+          </div>
+        </Dismissible>
+
+        <Dismissible itemId="batch-item-3" enableCache={false}>
+          <div
+            style={{
+              padding: "16px",
+              background: "#f8d7da",
+              border: "1px solid #f5c6cb",
+              borderRadius: "4px",
+            }}
+          >
+            <h4>Notification 3</h4>
+            <p>Third dismissible item in the batch.</p>
+          </div>
+        </Dismissible>
+
+        <Dismissible itemId="batch-item-4" enableCache={false}>
+          <div
+            style={{
+              padding: "16px",
+              background: "#d1ecf1",
+              border: "1px solid #bee5eb",
+              borderRadius: "4px",
+            }}
+          >
+            <h4>Notification 4</h4>
+            <p>Fourth dismissible item in the batch.</p>
+          </div>
+        </Dismissible>
+
+        <Dismissible itemId="batch-item-5" enableCache={false}>
+          <div
+            style={{
+              padding: "16px",
+              background: "#e2d5f1",
+              border: "1px solid #d4c4e8",
+              borderRadius: "4px",
+            }}
+          >
+            <h4>Notification 5</h4>
+            <p>Fifth dismissible item in the batch.</p>
+          </div>
+        </Dismissible>
+      </div>
+    ),
+  },
+  parameters: {
+    msw: {
+      handlers: createMockHandlers([
+        "batch-item-1",
+        "batch-item-2",
+        "batch-item-3",
+        "batch-item-4",
+        "batch-item-5",
       ]),
     },
   },

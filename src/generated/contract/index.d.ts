@@ -48,6 +48,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/users/{userId}/items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Batch get or create dismissible items
+     * @description Retrieves existing dismissible items or creates new ones for the given item IDs. Returns all items in the order requested.
+     */
+    post: operations["batchGetOrCreate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -76,6 +96,21 @@ export interface components {
     };
     GetOrCreateResponseDto: {
       data: components["schemas"]["DismissibleItemResponseDto"];
+    };
+    BatchGetOrCreateRequestDto: {
+      /**
+       * @description Array of item IDs to get or create (max 50 items)
+       * @example [
+       *       "welcome-banner-v1",
+       *       "onboarding-tip-1",
+       *       "feature-announcement"
+       *     ]
+       */
+      items: string[];
+    };
+    BatchGetOrCreateResponseDto: {
+      /** @description Array of dismissible items (retrieved or created) */
+      data: components["schemas"]["DismissibleItemResponseDto"][];
     };
     DismissResponseDto: {
       data: components["schemas"]["DismissibleItemResponseDto"];
@@ -204,6 +239,48 @@ export interface operations {
         };
       };
       /** @description Item not found or already dismissed */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Operation blocked by lifecycle hook */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  batchGetOrCreate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description User identifier (max length: 64 characters) */
+        userId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Array of item IDs to get or create */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchGetOrCreateRequestDto"];
+      };
+    };
+    responses: {
+      /** @description The dismissible items (retrieved or created) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BatchGetOrCreateResponseDto"];
+        };
+      };
+      /** @description Invalid request (validation error) */
       400: {
         headers: {
           [name: string]: unknown;

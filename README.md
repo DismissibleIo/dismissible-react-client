@@ -25,6 +25,7 @@ This component is used with the [Dismissible API Server](https://github.com/Dism
 
 - **Easy to use** - Simple component API for dismissible content
 - **Persistent state** - Dismissal state is saved and restored across sessions when using the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api)
+- **Automatic request batching** - Multiple items requested in the same render cycle are automatically coalesced into a single API call
 - **Restore support** - Restore previously dismissed items programmatically
 - **JWT Authentication** - Built-in support for secure JWT-based authentication
 - **Custom HTTP Client** - Bring your own HTTP client (axios, ky, etc.) with custom headers, interceptors, and tracking
@@ -550,6 +551,115 @@ function RestorableBanner({ itemId }) {
 
 ## Advanced Usage
 
+### Automatic Request Batching
+
+The library automatically batches multiple dismissible item requests into a single API call, dramatically reducing network overhead when rendering pages with many dismissible components.
+
+#### How It Works
+
+Under the hood, Dismissible uses a `BatchScheduler` that implements [DataLoader](https://github.com/graphql/dataloader)-style request coalescing:
+
+1. **Request Collection**: When multiple `<Dismissible>` components or `useDismissibleItem` hooks mount during the same render cycle, each request is queued rather than fired immediately.
+
+2. **Microtask Scheduling**: The scheduler uses `queueMicrotask()` to defer execution until after all synchronous code in the current JavaScript tick completes.
+
+3. **Batch Execution**: All queued requests are combined into a single batch API call (up to 50 items per batch, with automatic splitting for larger sets).
+
+4. **Result Distribution**: When the API responds, results are distributed back to each waiting component.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Same JavaScript Tick                         │
+├─────────────────────────────────────────────────────────────────┤
+│  Component A          Component B          Component C          │
+│  requests "banner"    requests "modal"     requests "tooltip"   │
+│       │                    │                    │                │
+│       └────────────────────┼────────────────────┘                │
+│                            ▼                                     │
+│                    ┌───────────────┐                            │
+│                    │ BatchScheduler│                            │
+│                    │    Queue      │                            │
+│                    └───────┬───────┘                            │
+│                            │                                     │
+│                     queueMicrotask                               │
+└────────────────────────────┼────────────────────────────────────┘
+                             ▼
+                ┌─────────────────────────┐
+                │   Single API Call       │
+                │   POST /v1/users/{id}/  │
+                │        items/batch      │
+                │   ["banner", "modal",   │
+                │    "tooltip"]           │
+                └─────────────────────────┘
+```
+
+#### Example: Dashboard with Multiple Dismissibles
+
+```tsx
+// Without batching: 5 separate API calls
+// With batching: 1 single API call containing all 5 item IDs
+
+function Dashboard() {
+  return (
+    <div>
+      <Dismissible itemId="welcome-banner">
+        <WelcomeBanner />
+      </Dismissible>
+      
+      <Dismissible itemId="feature-announcement">
+        <FeatureAnnouncement />
+      </Dismissible>
+      
+      <Dismissible itemId="survey-prompt">
+        <SurveyPrompt />
+      </Dismissible>
+      
+      <Dismissible itemId="upgrade-notice">
+        <UpgradeNotice />
+      </Dismissible>
+      
+      <Dismissible itemId="maintenance-alert">
+        <MaintenanceAlert />
+      </Dismissible>
+    </div>
+  );
+}
+```
+
+#### Built-in Optimizations
+
+The `BatchScheduler` includes several optimizations:
+
+- **Request Deduplication**: If the same `itemId` is requested multiple times in the same tick, only one request is made and the result is shared.
+- **In-Memory Caching**: Previously fetched items are cached in memory to avoid redundant API calls.
+- **Cache Priming**: Items loaded from localStorage are automatically primed in the batch cache.
+- **Cache Sync**: When items are dismissed or restored, the batch cache is updated to ensure consistency.
+
+#### Using the Hook with Batching
+
+The batching is completely transparent when using the `useDismissibleItem` hook:
+
+```tsx
+function NotificationCenter() {
+  // All three hooks will batch their requests into a single API call
+  const notification1 = useDismissibleItem('notification-1');
+  const notification2 = useDismissibleItem('notification-2');
+  const notification3 = useDismissibleItem('notification-3');
+
+  // Rendering logic...
+}
+```
+
+#### Performance Impact
+
+| Scenario | Without Batching | With Batching |
+|----------|------------------|---------------|
+| 5 dismissible items | 5 HTTP requests | 1 HTTP request |
+| 20 dismissible items | 20 HTTP requests | 1 HTTP request |
+| 100 dismissible items | 100 HTTP requests | 2 HTTP requests* |
+
+\* *Batches are automatically split at 50 items to respect API limits*
+
 ### Custom HTTP Client
 
 By default, Dismissible uses a built-in HTTP client powered by `openapi-fetch`. However, you can provide your own HTTP client implementation by passing a `client` prop to the `DismissibleProvider`. This is useful when you need:
@@ -576,6 +686,15 @@ interface DismissibleClient {
     signal?: AbortSignal;
   }) => Promise<DismissibleItem>;
 
+  // Required for automatic batching - fetches multiple items in one API call
+  batchGetOrCreate: (params: {
+    userId: string;
+    itemIds: string[];  // Array of item IDs (max 50)
+    baseUrl: string;
+    authHeaders: { Authorization?: string };
+    signal?: AbortSignal;
+  }) => Promise<DismissibleItem[]>;
+
   dismiss: (params: {
     userId: string;
     itemId: string;
@@ -592,6 +711,8 @@ interface DismissibleClient {
 }
 ```
 
+> **Note**: The `batchGetOrCreate` method is essential for the automatic request batching feature. When multiple components request items in the same render cycle, this method is called instead of multiple `getOrCreate` calls.
+
 #### Example: Custom Client with Axios
 
 ```tsx
@@ -604,6 +725,22 @@ const axiosClient: DismissibleClient = {
   getOrCreate: async ({ userId, itemId, baseUrl, authHeaders, signal }) => {
     const response = await axios.get(
       `${baseUrl}/v1/users/${userId}/items/${itemId}`,
+      {
+        headers: {
+          ...authHeaders,
+          'X-Correlation-ID': uuid(),
+        },
+        signal,
+      }
+    );
+    return response.data.data;
+  },
+
+  // Batch endpoint for automatic request coalescing
+  batchGetOrCreate: async ({ userId, itemIds, baseUrl, authHeaders, signal }) => {
+    const response = await axios.post(
+      `${baseUrl}/v1/users/${userId}/items/batch`,
+      { itemIds },
       {
         headers: {
           ...authHeaders,
@@ -680,6 +817,33 @@ const loggingClient: DismissibleClient = {
 
     if (!response.ok) {
       throw new Error(data.message || 'Failed to fetch dismissible item');
+    }
+
+    return data.data;
+  },
+
+  batchGetOrCreate: async ({ userId, itemIds, baseUrl, authHeaders, signal }) => {
+    console.log(`[Dismissible] Batch fetching ${itemIds.length} items for user: ${userId}`);
+    const startTime = performance.now();
+
+    const response = await fetch(
+      `${baseUrl}/v1/users/${userId}/items/batch`,
+      {
+        method: 'POST',
+        headers: {
+          ...authHeaders,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ itemIds }),
+        signal,
+      }
+    );
+
+    const data = await response.json();
+    console.log(`[Dismissible] Batch fetched ${itemIds.length} items in ${performance.now() - startTime}ms`);
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to batch fetch dismissible items');
     }
 
     return data.data;
@@ -771,6 +935,20 @@ const retryClient: DismissibleClient = {
     const response = await fetchWithRetry(
       `${baseUrl}/v1/users/${userId}/items/${itemId}`,
       { method: 'GET', headers: authHeaders, signal }
+    );
+    const data = await response.json();
+    return data.data;
+  },
+
+  batchGetOrCreate: async ({ userId, itemIds, baseUrl, authHeaders, signal }) => {
+    const response = await fetchWithRetry(
+      `${baseUrl}/v1/users/${userId}/items/batch`,
+      {
+        method: 'POST',
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemIds }),
+        signal,
+      }
     );
     const data = await response.json();
     return data.data;

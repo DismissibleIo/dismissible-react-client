@@ -1,3 +1,15 @@
+# [3.0.0](https://github.com/DismissibleIo/dismissible-react-client/compare/v2.1.0...v3.0.0) (2026-01-18)
+
+
+### Features
+
+* **batch:** support for the new batch endpoint ([#8](https://github.com/DismissibleIo/dismissible-react-client/issues/8)) ([748fa71](https://github.com/DismissibleIo/dismissible-react-client/commit/748fa71c4d3b1eafed694d06c478bebb8e9d2ea0))
+
+
+### BREAKING CHANGES
+
+* **batch:** Requires the new batch method on the http client
+
 # [2.1.0](https://github.com/DismissibleIo/dismissible-react-client/compare/v2.0.0...v2.1.0) (2026-01-16)
 
 

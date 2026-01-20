@@ -5,28 +5,43 @@
 <p align="center">Never Show The Same Thing Twice!</p>
 <p align="center">
     <a href="https://www.npmjs.com/package/@dismissible/react-client" target="_blank"><img src="https://img.shields.io/npm/v/@dismissible/react-client.svg" alt="NPM Version" /></a>
-    <a href="https://github.com/dismissibleio/dismissible-react-client/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/npm/l/@dismissible/react-client.svg" alt="Package License" /></a>
+    <a href="https://github.com/dismissibleio/dismissible-react-client/blob/main/LICENSE" target="_blank"><img src="https://img.shields.io/github/license/dismissibleio/dismissible-react-client" alt="Package License" /></a>
     <a href="https://www.npmjs.com/package/@dismissible/react-client" target="_blank"><img src="https://img.shields.io/npm/dm/@dismissible/react-client.svg" alt="NPM Downloads" /></a>
     <a href="https://github.com/dismissibleio/dismissible-react-client" target="_blank"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/dismissibleio/dismissible-react-client/publish.yml" /></a>
     <a href="https://paypal.me/joshstuartx" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" /></a>
 </p>
 
-Dismissible manages the state of your UI elements across sessions, so your users see what matters, once! No more onboarding messages reappearing on every tab, no more notifications haunting users across devices. Dismissible syncs dismissal state everywhere, so every message is intentional, never repetitive.
+Dismissible manages the state of your UI elements across sessions, so your users see what matters, once! 
 
 # @dismissible/react-client
 
-This is the React component library for creating dismissible UI elements with persistent state management.
+This is a React component library for creating dismissible UI elements with persistent state.
 
-This component is used with the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api), which you can self-host with Docker or integrate into your NestJS application.
+```tsx
+import { DismissibleProvider, Dismissible } from '@dismissible/react-client';
+
+function WelcomeBanner({ userId }: { userId: string }) {
+  return (
+    <DismissibleProvider userId={userId} baseUrl="http://localhost:3001">
+      <Dismissible itemId="welcome-banner">
+        <div className="banner">
+          <h2>Welcome to our app!</h2>
+          <p>This banner can be dismissed and won't show again.</p>
+        </div>
+      </Dismissible>
+    </DismissibleProvider>
+  );
+}
+```
+
+This component is used with the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api), which you can self-host with Docker or integrate into an existing NestJS application.
 
 **[dismissible.io](https://dismissible.io)** | **[Documentation](https://dismissible.io/docs)** | **[API Server](https://github.com/DismissibleIo/dismissible-api)**
 
 ## Features
 
-- **Easy to use** - Simple component API for dismissible content
 - **Persistent state** - Dismissal state is saved and restored across sessions when using the [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api)
 - **Automatic request batching** - Multiple items requested in the same render cycle are automatically coalesced into a single API call
-- **Restore support** - Restore previously dismissed items programmatically
 - **JWT Authentication** - Built-in support for secure JWT-based authentication
 - **Custom HTTP Client** - Bring your own HTTP client (axios, ky, etc.) with custom headers, interceptors, and tracking
 - **Customizable** - Custom loading, error, and dismiss button components
@@ -55,23 +70,6 @@ npm install react react-dom
 
 First, you need a [Dismissible API Server](https://github.com/DismissibleIo/dismissible-api). The easiest way is with Docker:
 
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  api:
-    image: dismissibleio/dismissible-api:latest
-    ports:
-      - '3001:3001'
-    environment:
-      DISMISSIBLE_PORT: 3001
-```
-
-```bash
-docker-compose up -d
-```
-
-OR
 
 ```bash
 docker run -p 3001:3001 -e DISMISSIBLE_PORT=3001 dismissibleio/dismissible-api:latest
@@ -567,31 +565,6 @@ Under the hood, Dismissible uses a `BatchScheduler` that implements [DataLoader]
 
 4. **Result Distribution**: When the API responds, results are distributed back to each waiting component.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Same JavaScript Tick                         │
-├─────────────────────────────────────────────────────────────────┤
-│  Component A          Component B          Component C          │
-│  requests "banner"    requests "modal"     requests "tooltip"   │
-│       │                    │                    │                │
-│       └────────────────────┼────────────────────┘                │
-│                            ▼                                     │
-│                    ┌───────────────┐                            │
-│                    │ BatchScheduler│                            │
-│                    │    Queue      │                            │
-│                    └───────┬───────┘                            │
-│                            │                                     │
-│                     queueMicrotask                               │
-└────────────────────────────┼────────────────────────────────────┘
-                             ▼
-                ┌─────────────────────────┐
-                │   Single API Call       │
-                │   POST /v1/users/{id}/  │
-                │        items/batch      │
-                │   ["banner", "modal",   │
-                │    "tooltip"]           │
-                └─────────────────────────┘
-```
 
 #### Example: Dashboard with Multiple Dismissibles
 
@@ -650,16 +623,6 @@ function NotificationCenter() {
 }
 ```
 
-#### Performance Impact
-
-| Scenario | Without Batching | With Batching |
-|----------|------------------|---------------|
-| 5 dismissible items | 5 HTTP requests | 1 HTTP request |
-| 20 dismissible items | 20 HTTP requests | 1 HTTP request |
-| 100 dismissible items | 100 HTTP requests | 2 HTTP requests* |
-
-\* *Batches are automatically split at 50 items to respect API limits*
-
 ### Custom HTTP Client
 
 By default, Dismissible uses a built-in HTTP client powered by `openapi-fetch`. However, you can provide your own HTTP client implementation by passing a `client` prop to the `DismissibleProvider`. This is useful when you need:
@@ -710,8 +673,6 @@ interface DismissibleClient {
   }) => Promise<DismissibleItem>;
 }
 ```
-
-> **Note**: The `batchGetOrCreate` method is essential for the automatic request batching feature. When multiple components request items in the same render cycle, this method is called instead of multiple `getOrCreate` calls.
 
 #### Example: Custom Client with Axios
 
@@ -793,187 +754,6 @@ function App() {
 }
 ```
 
-#### Example: Custom Client with Logging
-
-```tsx
-import type { DismissibleClient } from '@dismissible/react-client';
-
-const loggingClient: DismissibleClient = {
-  getOrCreate: async ({ userId, itemId, baseUrl, authHeaders, signal }) => {
-    console.log(`[Dismissible] Fetching item: ${itemId} for user: ${userId}`);
-    const startTime = performance.now();
-
-    const response = await fetch(
-      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
-      {
-        method: 'GET',
-        headers: authHeaders,
-        signal,
-      }
-    );
-
-    const data = await response.json();
-    console.log(`[Dismissible] Fetched in ${performance.now() - startTime}ms`);
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch dismissible item');
-    }
-
-    return data.data;
-  },
-
-  batchGetOrCreate: async ({ userId, itemIds, baseUrl, authHeaders, signal }) => {
-    console.log(`[Dismissible] Batch fetching ${itemIds.length} items for user: ${userId}`);
-    const startTime = performance.now();
-
-    const response = await fetch(
-      `${baseUrl}/v1/users/${userId}/items/batch`,
-      {
-        method: 'POST',
-        headers: {
-          ...authHeaders,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ itemIds }),
-        signal,
-      }
-    );
-
-    const data = await response.json();
-    console.log(`[Dismissible] Batch fetched ${itemIds.length} items in ${performance.now() - startTime}ms`);
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to batch fetch dismissible items');
-    }
-
-    return data.data;
-  },
-
-  dismiss: async ({ userId, itemId, baseUrl, authHeaders }) => {
-    console.log(`[Dismissible] Dismissing item: ${itemId}`);
-    
-    const response = await fetch(
-      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
-      {
-        method: 'DELETE',
-        headers: authHeaders,
-      }
-    );
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to dismiss item');
-    }
-
-    console.log(`[Dismissible] Item dismissed at: ${data.data.dismissedAt}`);
-    return data.data;
-  },
-
-  restore: async ({ userId, itemId, baseUrl, authHeaders }) => {
-    console.log(`[Dismissible] Restoring item: ${itemId}`);
-    
-    const response = await fetch(
-      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
-      {
-        method: 'POST',
-        headers: authHeaders,
-      }
-    );
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to restore item');
-    }
-
-    console.log(`[Dismissible] Item restored successfully`);
-    return data.data;
-  },
-};
-
-function App() {
-  return (
-    <DismissibleProvider
-      userId="user-123"
-      baseUrl="https://api.yourapp.com"
-      client={loggingClient}
-    >
-      <YourApp />
-    </DismissibleProvider>
-  );
-}
-```
-
-#### Example: Custom Client with Retry Logic
-
-```tsx
-import type { DismissibleClient } from '@dismissible/react-client';
-
-async function fetchWithRetry(
-  url: string,
-  options: RequestInit,
-  retries = 3
-): Promise<Response> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch(url, options);
-      if (response.ok || attempt === retries) {
-        return response;
-      }
-    } catch (error) {
-      if (attempt === retries) throw error;
-    }
-    // Exponential backoff
-    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100));
-  }
-  throw new Error('Max retries reached');
-}
-
-const retryClient: DismissibleClient = {
-  getOrCreate: async ({ userId, itemId, baseUrl, authHeaders, signal }) => {
-    const response = await fetchWithRetry(
-      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
-      { method: 'GET', headers: authHeaders, signal }
-    );
-    const data = await response.json();
-    return data.data;
-  },
-
-  batchGetOrCreate: async ({ userId, itemIds, baseUrl, authHeaders, signal }) => {
-    const response = await fetchWithRetry(
-      `${baseUrl}/v1/users/${userId}/items/batch`,
-      {
-        method: 'POST',
-        headers: { ...authHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itemIds }),
-        signal,
-      }
-    );
-    const data = await response.json();
-    return data.data;
-  },
-
-  dismiss: async ({ userId, itemId, baseUrl, authHeaders }) => {
-    const response = await fetchWithRetry(
-      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
-      { method: 'DELETE', headers: authHeaders }
-    );
-    const data = await response.json();
-    return data.data;
-  },
-
-  restore: async ({ userId, itemId, baseUrl, authHeaders }) => {
-    const response = await fetchWithRetry(
-      `${baseUrl}/v1/users/${userId}/items/${itemId}`,
-      { method: 'POST', headers: authHeaders }
-    );
-    const data = await response.json();
-    return data.data;
-  },
-};
-```
-
 ## Styling
 
 The library includes minimal default styles. You can override them or provide your own:
@@ -996,30 +776,6 @@ The library includes minimal default styles. You can override them or provide yo
   /* Default dismiss button */
 }
 ```
-
-## Self-Hosting
-
-Dismissible is designed to be self-hosted. You have full control over your data.
-
-### Option 1: Docker (Recommended)
-
-The fastest way to get started:
-
-```bash
-docker run -p 3001:3001 dismissibleio/dismissible-api:latest
-```
-
-See the [Docker documentation](https://dismissible.io/docs/docker) for production configuration.
-
-### Option 2: NestJS Module
-
-Integrate directly into your existing NestJS application:
-
-```bash
-npm install @dismissible/nestjs-api
-```
-
-See the [NestJS documentation](https://dismissible.io/docs/nestjs) for setup instructions.
 
 ## Support
 
